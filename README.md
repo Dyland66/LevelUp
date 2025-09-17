@@ -1,6 +1,6 @@
-# CSC1108 PRACTICUM
+# CSC1180 PRACTICUM
 
-This is a template for CSC1108 practicums.  Please read these instructions carefully.
+This is a template for csc1180 practicums.  Please read these instructions carefully.
 
 This file is written in
 [markdown](https://guides.github.com/features/mastering-markdown/).  Markdown
@@ -15,14 +15,14 @@ You *must* do the following:
 2 - These repos must be named according to the relevant year and module; for example:
      the format:
 
-     2026-csc1097-XXXXXX
+     2026-csc1180-XXXXXX
 
 (where XXXXXX can be anything at all).
 
-For example, if Stephen Blott were to be doing an CSC1108 practicum, he could rename
+For example, if Stephen Blott were to be doing an csc1180 practicum, he could rename
 his repo as:
 
-     2026-csc1097-sblott
+     2026-csc1180-sblott
 
 
 You should also update the *Project description*.
