@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+
+{% block title %}My Profile · LevelUp!{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-shell { max-width: 600px; }
+    .profile-shell p { margin-bottom: 16px; }
+    .profile-shell label { display: block; font-size: .8rem; font-weight: 500; color: #4b4540; margin-bottom: 5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-shell lu-fadein">
+    <div class="lu-section-title">My profile</div>
+    <div class="lu-section-sub">Update your personal details below.</div>
+
+    <div class="lu-card">
+        <div class="lu-card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div style="margin-top: 20px; display:flex; gap:10px;">
+                    <button type="submit" class="lu-btn lu-btn-primary">Save changes</button>
+                    <a href="{% url 'home' %}" class="lu-btn lu-btn-outline">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

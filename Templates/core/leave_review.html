@@ -1,0 +1,131 @@
+{% extends "core/base.html" %}
+
+{% block title %}Leave a Review · LevelUp!{% endblock %}
+
+{% block extra_head %}
+<style>
+    .review-shell { max-width: 520px; }
+
+    /* Star rating widget — replaces Django's default radio buttons */
+    .star-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+    .star-btn {
+        font-size: 2rem;
+        cursor: pointer;
+        color: #d1cdc8;
+        background: none;
+        border: none;
+        padding: 0;
+        line-height: 1;
+        transition: color .12s, transform .12s;
+    }
+    .star-btn:hover,
+    .star-btn.active { color: #f59e0b; transform: scale(1.15); }
+
+    /* Hide Django's raw radio inputs */
+    .hidden-stars { display: none; }
+
+    .review-booking-info {
+        background: var(--cream);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 24px;
+        font-size: .875rem;
+    }
+    .review-booking-info strong { color: var(--ink); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="review-shell lu-fadein">
+    <div style="margin-bottom:20px;">
+        <a href="{% url 'booking_detail' booking.id %}" style="font-size:.84rem; color:var(--muted); text-decoration:none;">← Back to booking</a>
+    </div>
+
+    <div class="lu-section-title">Leave a review</div>
+    <div class="lu-section-sub">Share your experience to help other students.</div>
+
+    <div class="review-booking-info">
+        <strong>{{ booking.slot.skill.name }}</strong> with {{ booking.slot.coach.user.full_name }}<br>
+        <span style="color:var(--muted); font-size:.8rem;">{{ booking.slot.start_datetime|date:"D j M Y, H:i" }}</span>
+    </div>
+
+    <div class="lu-card">
+        <div class="lu-card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- Star picker (visual) -->
+                <div style="margin-bottom:6px;">
+                    <label class="lu-label">Your rating</label>
+                    <div class="star-row" id="starRow">
+                        {% for i in "12345" %}
+                            <button type="button" class="star-btn" data-val="{{ forloop.counter }}" onclick="setStar({{ forloop.counter }})">★</button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Hidden radio group that Django's form actually submits -->
+                <div class="hidden-stars">{{ form.stars }}</div>
+
+                <!-- Comment -->
+                <div class="lu-form-group" style="margin-top:4px;">
+                    <label class="lu-label" for="{{ form.comment.id_for_label }}">{{ form.comment.label }}</label>
+                    {{ form.comment }}
+                    {% if form.comment.help_text %}
+                        <span class="helptext">{{ form.comment.help_text }}</span>
+                    {% endif %}
+                    {% if form.comment.errors %}
+                        <ul class="errorlist">{% for e in form.comment.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button type="submit" class="lu-btn lu-btn-primary" style="flex:1; justify-content:center;">Submit review</button>
+                    <a href="{% url 'booking_detail' booking.id %}" class="lu-btn lu-btn-outline">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedStar = 0;
+
+function setStar(val) {
+    selectedStar = val;
+
+    // Update visual stars
+    document.querySelectorAll('.star-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.val) <= val);
+    });
+
+    // Sync to Django's hidden radio input
+    const radio = document.querySelector(`input[name="stars"][value="${val}"]`);
+    if (radio) radio.checked = true;
+}
+
+// Hover preview
+document.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('mouseenter', () => {
+        const v = parseInt(btn.dataset.val);
+        document.querySelectorAll('.star-btn').forEach(b => {
+            b.style.color = parseInt(b.dataset.val) <= v ? '#f59e0b' : '#d1cdc8';
+        });
+    });
+    btn.addEventListener('mouseleave', () => {
+        document.querySelectorAll('.star-btn').forEach(b => {
+            b.style.color = parseInt(b.dataset.val) <= selectedStar ? '#f59e0b' : '#d1cdc8';
+        });
+    });
+});
+</script>
+{% endblock %}
