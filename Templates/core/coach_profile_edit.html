@@ -1,0 +1,30 @@
+{% extends "core/base_coach.html" %}
+
+{% block title %}Coach Profile Setup · LevelUp!{% endblock %}
+
+{% block content %}
+<div style="max-width: 640px;">
+    <div class="lu-section-title">Coach profile setup</div>
+    <div class="lu-section-sub">Set your skills, areas, and hourly rate. Students will see this on your listing.</div>
+
+    <div class="lu-card">
+        <div class="lu-card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="lu-form-group">
+                        <label class="lu-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+                        {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                {% endfor %}
+                <div style="display:flex; gap:10px; margin-top:8px;">
+                    <button type="submit" class="lu-btn lu-btn-primary">Save profile</button>
+                    <a href="{% url 'coach_dashboard' %}" class="lu-btn lu-btn-outline">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

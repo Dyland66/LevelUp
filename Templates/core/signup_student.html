@@ -1,0 +1,40 @@
+{% extends "core/base.html" %}
+
+{% block title %}Sign up as Student · LevelUp!{% endblock %}
+
+{% block extra_head %}
+<style>
+    .auth-shell { max-width: 480px; margin: 32px auto 0; }
+    .auth-header { text-align: center; margin-bottom: 28px; }
+    .auth-logo { font-family: var(--font-display); font-size: 1.4rem; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .auth-logo span { display: inline-block; width: 7px; height: 7px; background: var(--accent2); border-radius: 50%; margin-left: 2px; vertical-align: middle; }
+    .auth-sub { color: var(--muted); font-size: .875rem; }
+    .auth-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 28px 28px 24px; box-shadow: var(--shadow-lg); }
+    .auth-card p { margin-bottom: 14px; }
+    .auth-card label { display: block; font-size: .79rem; font-weight: 500; color: #4b4540; margin-bottom: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-shell lu-fadein">
+    <div class="auth-header">
+        <div class="auth-logo">LevelUp<span></span></div>
+        <div class="auth-sub">Create your student account</div>
+    </div>
+    <div class="auth-card">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="lu-btn lu-btn-primary" style="width:100%; margin-top:8px; padding:11px; font-size:.95rem; border-radius:12px; justify-content:center;">
+                Create account
+            </button>
+        </form>
+    </div>
+    <p style="text-align:center; margin-top:18px; font-size:.84rem; color:var(--muted);">
+        Already have an account? <a href="{% url 'login' %}" style="color:var(--accent); font-weight:500; text-decoration:none;">Log in</a>
+    </p>
+    <p style="text-align:center; margin-top:8px; font-size:.82rem; color:var(--muted);">
+        <a href="{% url 'signup_choice' %}" style="color:var(--muted); text-decoration:none;">← Change account type</a>
+    </p>
+</div>
+{% endblock %}

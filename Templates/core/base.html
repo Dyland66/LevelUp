@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}LevelUp!{% endblock %}</title>
+
+    <!-- Google Fonts: Syne (display) + DM Sans (body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ink:     #0d0d0d;
+            --canvas:  #f5f2ec;
+            --cream:   #fffdf8;
+            --muted:   #8a8278;
+            --border:  #e2ddd6;
+            --accent:  #1a6b3c;     /* Irish green — confident, not garish */
+            --accent2: #e8a020;     /* warm amber for sports / highlights */
+            --accent3: #5b3fd4;     /* violet for music */
+            --card-bg: #ffffff;
+            --shadow:  0 2px 12px rgba(13,13,13,0.07);
+            --shadow-lg: 0 8px 40px rgba(13,13,13,0.13);
+            --radius:  14px;
+            --font-display: 'Syne', sans-serif;
+            --font-body:    'DM Sans', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--canvas);
+            color: var(--ink);
+            font-family: var(--font-body);
+            font-size: 15px;
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── NAV ─────────────────────────────────────────── */
+        .lu-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--ink);
+            border-bottom: 1px solid #1f1f1f;
+        }
+        .lu-nav-inner {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+        .lu-brand {
+            font-family: var(--font-display);
+            font-size: 1.35rem;
+            color: #fff;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .lu-brand-dot {
+            width: 8px; height: 8px;
+            background: var(--accent2);
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .lu-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            list-style: none;
+        }
+        .lu-nav-links a {
+            color: rgba(255,255,255,0.72);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: color .15s, background .15s;
+        }
+        .lu-nav-links a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .lu-nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .lu-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all .18s;
+        }
+        .lu-btn-ghost { background: transparent; color: rgba(255,255,255,0.72); }
+        .lu-btn-ghost:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .lu-btn-primary { background: var(--accent); color: #fff; }
+        .lu-btn-primary:hover { background: #155c32; }
+        .lu-btn-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+        .lu-btn-outline:hover { border-color: var(--ink); }
+        .lu-btn-dark { background: var(--ink); color: #fff; }
+        .lu-btn-dark:hover { background: #222; }
+        .lu-btn-danger { background: #dc2626; color: #fff; }
+        .lu-btn-danger:hover { background: #b91c1c; }
+        .lu-btn-sm { padding: 5px 12px; font-size: 0.8125rem; border-radius: 8px; }
+        .lu-btn-warning-outline { background: transparent; color: rgba(255,255,255,.7); border: 1.5px solid rgba(255,255,255,.2); }
+        .lu-btn-warning-outline:hover { color: #fff; border-color: rgba(255,255,255,.5); }
+
+        /* ── LAYOUT ──────────────────────────────────────── */
+        .lu-page {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        /* ── ALERTS ──────────────────────────────────────── */
+        .lu-alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 0.875rem;
+            border-left: 3px solid var(--accent);
+            background: #edf7f1;
+            color: #1a4a2e;
+        }
+        .lu-alert-error { border-color: #dc2626; background: #fef2f2; color: #7f1d1d; }
+
+        /* ── CARDS ───────────────────────────────────────── */
+        .lu-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .lu-card-body { padding: 24px; }
+        .lu-card-head {
+            padding: 20px 24px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ── BADGES ──────────────────────────────────────── */
+        .lu-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .lu-badge-green   { background: #dcfce7; color: #15803d; }
+        .lu-badge-amber   { background: #fef3c7; color: #92400e; }
+        .lu-badge-red     { background: #fee2e2; color: #991b1b; }
+        .lu-badge-purple  { background: #ede9fe; color: #4c1d95; }
+        .lu-badge-neutral { background: #f4f4f5; color: #52525b; border: 1px solid #e4e4e7; }
+        .lu-badge-dark    { background: var(--ink); color: #fff; }
+
+        /* ── FORMS ───────────────────────────────────────── */
+        .lu-form-group { margin-bottom: 18px; }
+        .lu-label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #4b4540;
+            margin-bottom: 6px;
+            letter-spacing: .01em;
+        }
+        input[type=text], input[type=email], input[type=password],
+        input[type=date], input[type=datetime-local], input[type=number],
+        input[type=url], textarea, select {
+            width: 100%;
+            padding: 10px 13px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            background: var(--cream);
+            color: var(--ink);
+            outline: none;
+            transition: border-color .15s;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            background: #fff;
+        }
+        .helptext, .form-text {
+            font-size: 0.76rem;
+            color: var(--muted);
+            margin-top: 4px;
+            display: block;
+        }
+        ul.errorlist {
+            list-style: none;
+            padding: 0;
+            margin-top: 4px;
+        }
+        ul.errorlist li {
+            font-size: 0.78rem;
+            color: #dc2626;
+        }
+        /* Style Django auto-rendered form fields */
+        p { margin-bottom: 0; }
+
+        /* ── SECTION HEADING ─────────────────────────────── */
+        .lu-section-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+        .lu-section-sub {
+            color: var(--muted);
+            font-size: 0.875rem;
+            margin-bottom: 28px;
+        }
+
+        /* ── DIVIDER ─────────────────────────────────────── */
+        .lu-divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        /* ── SLOT ITEM ───────────────────────────────────── */
+        .lu-slot-item {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--cream);
+            margin-bottom: 10px;
+            transition: border-color .15s;
+        }
+        .lu-slot-item:hover { border-color: #bbb4aa; }
+
+        /* ── TAG ROW ─────────────────────────────────────── */
+        .lu-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        /* ── RESPONSIVE GRID ─────────────────────────────── */
+        .lu-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .lu-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .lu-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        @media (max-width: 768px) {
+            .lu-grid-2, .lu-grid-3, .lu-grid-auto { grid-template-columns: 1fr; }
+            .lu-nav-links { display: none; }
+            .lu-page { padding: 24px 16px 60px; }
+        }
+
+        /* ── ANIMATIONS ──────────────────────────────────── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .lu-fadein { animation: fadeUp .45s ease both; }
+        .lu-fadein-2 { animation: fadeUp .45s .1s ease both; }
+        .lu-fadein-3 { animation: fadeUp .45s .2s ease both; }
+
+        /* ── CATEGORY CHIPS ──────────────────────────────── */
+        .lu-cat-grinds  { --cat: var(--accent); }
+        .lu-cat-sports  { --cat: var(--accent2); }
+        .lu-cat-music   { --cat: var(--accent3); }
+
+        .lu-cat-pill {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            background: color-mix(in srgb, var(--cat, #888) 12%, white);
+            color: var(--cat, #888);
+        }
+
+        /* ── FOOTER ──────────────────────────────────────── */
+        .lu-footer {
+            background: var(--ink);
+            color: rgba(255,255,255,.45);
+            text-align: center;
+            padding: 24px;
+            font-size: 0.8rem;
+        }
+        .lu-footer a { color: rgba(255,255,255,.6); text-decoration: none; }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="lu-nav">
+    <div class="lu-nav-inner">
+        <a class="lu-brand" href="{% url 'home' %}">
+            LevelUp<span class="lu-brand-dot"></span>
+        </a>
+
+        <ul class="lu-nav-links">
+            <li><a href="{% url 'find_lessons' %}">Find Lessons</a></li>
+            <li><a href="{% url 'about' %}">About</a></li>
+        </ul>
+
+        <div class="lu-nav-right">
+            {% if user.is_authenticated %}
+                {% if user.role == "COACH" %}
+                    <a class="lu-btn lu-btn-ghost" href="{% url 'coach_dashboard' %}">Dashboard</a>
+                {% else %}
+                    <a class="lu-btn lu-btn-ghost" href="{% url 'student_upcoming' %}">My Sessions</a>
+                <a class="lu-btn lu-btn-ghost" href="{% url 'child_profile_list' %}">Children</a>
+                {% endif %}
+                <a class="lu-btn lu-btn-ghost" href="{% url 'my_profile' %}">Profile</a>
+                <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="lu-btn lu-btn-warning-outline">Log out</button>
+                </form>
+            {% else %}
+                <a class="lu-btn lu-btn-ghost" href="{% url 'login' %}">Log in</a>
+                <a class="lu-btn lu-btn-primary" href="{% url 'signup_choice' %}">Get started</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<div class="lu-page lu-fadein">
+    {% for message in messages %}
+        <div class="lu-alert {% if 'error' in message.tags %}lu-alert-error{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<footer class="lu-footer">
+    © 2026 LevelUp! · Private lessons, instantly booked · Ireland ·
+    <a href="{% url 'about' %}">About</a>
+</footer>
+
+</body>
+</html>

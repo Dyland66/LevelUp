@@ -1,0 +1,113 @@
+{% extends "core/base.html" %}
+
+{% block title %}My Sessions · LevelUp!{% endblock %}
+
+{% block extra_head %}
+<style>
+    .sessions-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 28px;
+    }
+    .session-item {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        text-decoration: none;
+        color: var(--ink);
+        transition: border-color .15s, box-shadow .15s;
+    }
+    .session-item:hover {
+        border-color: #c5bfb8;
+        box-shadow: var(--shadow);
+        color: var(--ink);
+    }
+    .session-dot {
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .session-dot-confirmed { background: #22c55e; }
+    .session-dot-pending   { background: #f59e0b; }
+    .session-dot-rejected  { background: #ef4444; }
+    .session-dot-cancelled { background: #9ca3af; }
+    .session-info { flex: 1; min-width: 0; }
+    .session-name { font-weight: 600; font-size: .95rem; }
+    .session-meta { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .session-arrow { color: var(--muted); font-size: .9rem; flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sessions-header">
+    <div>
+        <div class="lu-section-title">My sessions</div>
+        <div class="lu-section-sub" style="margin-bottom:0;">Track all your upcoming and past bookings.</div>
+    </div>
+    <a href="{% url 'find_lessons' %}" class="lu-btn lu-btn-primary lu-btn-sm">+ Find more lessons</a>
+</div>
+
+{% if bookings %}
+    {% for b in bookings %}
+        <a class="session-item" href="{% url 'booking_detail' b.id %}">
+            <div class="session-dot
+                {% if b.status == 'CONFIRMED' %}session-dot-confirmed
+                {% elif b.status == 'PENDING' %}session-dot-pending
+                {% elif b.status == 'REJECTED' %}session-dot-rejected
+                {% else %}session-dot-cancelled{% endif %}">
+            </div>
+            <div class="session-info">
+                <div class="session-name">
+                    {{ b.slot.skill.name }} with {{ b.slot.coach.user.full_name }}
+                    {% if b.child_profile %}
+                        <span style="font-size:.75rem; color:var(--muted); font-weight:400;"> · for {{ b.child_profile.full_name }}</span>
+                    {% endif %}
+                </div>
+                <div class="session-meta">
+                    {{ b.slot.start_datetime|date:"D j M Y, H:i" }}
+                    &nbsp;·&nbsp; {{ b.slot.get_mode_display }}
+                    {% if b.slot.mode == "IN_PERSON" and b.slot.area %}
+                        &nbsp;·&nbsp; {{ b.slot.area.name }}
+                    {% endif %}
+                    {% if b.status == "PENDING" %}
+                        &nbsp;·&nbsp; Awaiting coach approval
+                    {% endif %}
+                </div>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                <span class="lu-badge
+                    {% if b.status == 'CONFIRMED' %}lu-badge-green
+                    {% elif b.status == 'PENDING' %}lu-badge-amber
+                    {% elif b.status == 'REJECTED' %}lu-badge-red
+                    {% else %}lu-badge-neutral{% endif %}">
+                    {{ b.get_status_display }}
+                </span>
+                {% if b.can_cancel %}
+                    <a href="{% url 'student_cancel_booking' b.id %}"
+                       class="lu-btn lu-btn-danger-outline lu-btn-sm"
+                       onclick="event.preventDefault(); event.stopPropagation(); window.location=this.href;">
+                        Cancel
+                    </a>
+                {% endif %}
+            </div>
+            <div class="session-arrow">›</div>
+        </a>
+    {% endfor %}
+{% else %}
+    <div class="lu-card">
+        <div class="lu-card-body" style="text-align:center; padding:60px; color:var(--muted);">
+            <div style="font-size:2.5rem; margin-bottom:16px;">📅</div>
+            <div style="font-size:1rem; font-weight:500; margin-bottom:8px; color:var(--ink);">No sessions booked yet</div>
+            <div style="font-size:.875rem; margin-bottom:24px;">Find a tutor or coach and book your first session.</div>
+            <a href="{% url 'find_lessons' %}" class="lu-btn lu-btn-primary">Browse lessons</a>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}

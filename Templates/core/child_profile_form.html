@@ -1,0 +1,38 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ action }} Child Profile · LevelUp!{% endblock %}
+
+{% block extra_head %}
+<style>
+    .child-form-shell { max-width: 480px; }
+    .child-form-shell p { margin-bottom: 16px; }
+    .child-form-shell label { display:block; font-size:.8rem; font-weight:500; color:#4b4540; margin-bottom:5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="child-form-shell lu-fadein">
+    <div style="margin-bottom:20px;">
+        <a href="{% url 'child_profile_list' %}" style="font-size:.84rem; color:var(--muted); text-decoration:none;">← Back to child profiles</a>
+    </div>
+
+    <div class="lu-section-title">{{ action }} child profile</div>
+    <div class="lu-section-sub">
+        This profile will appear on bookings made on behalf of this child.
+        No account or password is created for them.
+    </div>
+
+    <div class="lu-card">
+        <div class="lu-card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div style="display:flex; gap:10px; margin-top:8px;">
+                    <button type="submit" class="lu-btn lu-btn-primary">Save profile</button>
+                    <a href="{% url 'child_profile_list' %}" class="lu-btn lu-btn-outline">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
