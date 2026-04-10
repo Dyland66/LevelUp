@@ -1,0 +1,250 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ coach.user.full_name }} · LevelUp!{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<style>
+    .profile-layout { display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: start; }
+    @media (max-width: 900px) { .profile-layout { grid-template-columns: 1fr; } }
+    .profile-sidebar { position: sticky; top: 88px; }
+    .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border); display: block; margin-bottom: 16px; }
+    .avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg,#dcfce7,#bbf7d0); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 16px; }
+    .coach-name { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .view-tabs { display: flex; gap: 4px; background: var(--canvas); border: 1px solid var(--border); border-radius: 12px; padding: 4px; width: fit-content; }
+    .view-tab { padding: 7px 18px; border-radius: 9px; font-size: .84rem; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--muted); font-family: var(--font-body); transition: background .15s, color .15s; }
+    .view-tab.active { background: var(--card-bg); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    #calendar-wrapper { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    .fc { font-family: var(--font-body) !important; font-size: .875rem; }
+    .fc .fc-toolbar-title { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: -0.3px; }
+    .fc .fc-button { background: var(--ink) !important; border-color: var(--ink) !important; border-radius: 8px !important; font-family: var(--font-body) !important; font-size: .78rem !important; padding: 5px 11px !important; box-shadow: none !important; text-transform: none !important; }
+    .fc .fc-button:hover { background: #333 !important; }
+    .fc .fc-button-active { background: var(--accent) !important; border-color: var(--accent) !important; }
+    .fc .fc-daygrid-day-number, .fc .fc-col-header-cell-cushion { color: var(--ink); text-decoration: none; font-size: .8rem; }
+    .fc .fc-day-today { background: #f0fdf4 !important; }
+    .fc-event { cursor: pointer !important; border-radius: 6px !important; padding: 2px 6px !important; font-size: .76rem !important; border: none !important; }
+    .fc-event:hover { filter: brightness(.92); }
+    .fc .fc-timegrid-slot { height: 36px !important; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
+    #list-wrapper { display: none; }
+    .slot-item { background: var(--cream); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .slot-item:hover { border-color: #bbb4aa; }
+    .popup-overlay { display: none; position: fixed; inset: 0; background: rgba(13,13,13,.45); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+    .popup-overlay.open { display: flex; }
+    .popup { background: var(--card-bg); border-radius: 18px; padding: 28px; max-width: 400px; width: 90%; box-shadow: var(--shadow-lg); position: relative; animation: popIn .2s ease both; }
+    @keyframes popIn { from { opacity:0; transform:scale(.95) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    .popup-close { position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--canvas); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .popup-close:hover { background: var(--border); }
+    .popup-row { display: flex; justify-content: space-between; font-size: .84rem; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+    .popup-row:last-of-type { border-bottom: none; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); margin-bottom: 14px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-layout">
+
+    <!-- Sidebar -->
+    <aside class="profile-sidebar">
+        <div class="lu-card">
+            <div class="lu-card-body">
+                {% if coach.user.profile_picture %}
+                    <img src="{{ coach.user.profile_picture.url }}" class="avatar" alt="{{ coach.user.full_name }}">
+                {% else %}
+                    <div class="avatar-placeholder">{{ coach.user.forename|first|default:"?" }}</div>
+                {% endif %}
+
+                <div class="coach-name">{{ coach.user.full_name }}</div>
+                <div style="margin-bottom:12px;">
+                    {% if coach.category.name == "Grinds" %}<span class="lu-cat-pill lu-cat-grinds">Grinds</span>
+                    {% elif coach.category.name == "Sports" %}<span class="lu-cat-pill lu-cat-sports">Sports</span>
+                    {% elif coach.category.name == "Music" %}<span class="lu-cat-pill lu-cat-music">Music</span>{% endif %}
+                    &nbsp;<span class="lu-badge lu-badge-green">€{{ coach.hourly_rate }}/hr</span>
+                    {% if coach.is_verified %}&nbsp;<span class="lu-badge" style="background:#dbeafe;color:#1e40af;">✓ Verified</span>{% endif %}
+                </div>
+
+                {% if avg_rating %}
+                    <div style="margin-bottom:12px; font-size:.85rem;">
+                        <span style="color:#f59e0b;">★ {{ avg_rating }}</span>
+                        <span style="color:var(--muted);">({{ review_count }} review{{ review_count|pluralize }})</span>
+                    </div>
+                {% endif %}
+
+                <p style="font-size:.875rem; color:var(--muted); line-height:1.6; margin-bottom:16px;">{{ coach.user.bio|default:"No bio added yet." }}</p>
+
+                <hr class="lu-divider">
+                <div style="font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:8px;">Teaches</div>
+                <div class="lu-tags">
+                    {% for s in coach.teaches.all %}<span class="lu-badge lu-badge-neutral">{{ s.name }}</span>
+                    {% empty %}<span style="font-size:.8rem; color:var(--muted);">Not listed yet</span>{% endfor %}
+                </div>
+
+                {% if slots %}
+                    <hr class="lu-divider">
+                    <div style="font-size:.8rem; color:var(--muted);">
+                        <span class="lu-badge lu-badge-green">{{ slots|length }} slot{{ slots|length|pluralize }} open</span><br><br>
+                        Click any slot on the calendar to book.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+
+    <!-- Slots panel -->
+    <div id="slots">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:12px;">
+            <div>
+                <div class="lu-section-title">Available slots</div>
+                <div style="font-size:.84rem; color:var(--muted);">
+                    {% if mode_filter == "IN_PERSON" %}Showing in-person only. <a href="{% url 'coach_detail' coach.id %}" style="color:var(--accent);">Show all</a>
+                    {% elif mode_filter == "ONLINE" %}Showing online only. <a href="{% url 'coach_detail' coach.id %}" style="color:var(--accent);">Show all</a>
+                    {% else %}{% if slots %}Click a slot to book instantly.{% else %}No slots available right now.{% endif %}{% endif %}
+                </div>
+            </div>
+            {% if slots %}
+                <div class="view-tabs">
+                    <button class="view-tab active" id="tab-calendar" onclick="showView('calendar')">📅 Calendar</button>
+                    <button class="view-tab" id="tab-list" onclick="showView('list')">☰ List</button>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if slots %}
+            <div class="legend">
+                <span><span class="legend-dot" style="background:#b45309;"></span> In person</span>
+                <span><span class="legend-dot" style="background:{% if coach.category.name == 'Grinds' %}#1a6b3c{% elif coach.category.name == 'Music' %}#5b3fd4{% else %}#0369a1{% endif %};"></span> Online</span>
+            </div>
+
+            <div id="calendar-wrapper"><div id="calendar"></div></div>
+
+            <div id="list-wrapper">
+                {% for slot in slots %}
+                    <div class="slot-item">
+                        <div>
+                            <div style="font-weight:600; font-size:.9rem;">{{ slot.skill.name }}</div>
+                            <div style="font-size:.78rem; color:var(--muted); margin-top:2px;">
+                                {{ slot.start_datetime|date:"D j M Y, H:i" }} → {{ slot.end_datetime|date:"H:i" }}
+                                · {{ slot.get_mode_display }}{% if slot.mode == "IN_PERSON" and slot.area %} · {{ slot.area.name }}{% endif %}
+                            </div>
+                        </div>
+                        {% if user.is_authenticated and user.role == "STUDENT" %}
+                            <a class="lu-btn lu-btn-primary lu-btn-sm" href="{% url 'book_slot' slot.id %}">Book</a>
+                        {% else %}
+                            <a class="lu-btn lu-btn-outline lu-btn-sm" href="{% url 'login' %}">Login to book</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <div class="lu-card">
+                <div class="lu-card-body" style="text-align:center; padding:48px; color:var(--muted);">📭 No available slots at the moment.</div>
+            </div>
+        {% endif %}
+
+        {% if reviews %}
+            <div style="margin-top:36px;">
+                <div class="lu-section-title" style="font-size:1.15rem; margin-bottom:16px;">
+                    Student reviews <span class="lu-badge lu-badge-neutral" style="font-size:.75rem; margin-left:8px;">{{ review_count }}</span>
+                </div>
+                {% for review in reviews %}
+                    <div class="lu-card" style="margin-bottom:10px;">
+                        <div class="lu-card-body" style="padding:14px 18px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="color:#f59e0b;">{% for i in "12345" %}{% if forloop.counter <= review.stars %}★{% else %}☆{% endif %}{% endfor %}</span>
+                                <span style="font-size:.75rem; color:var(--muted);">{{ review.created_at|date:"j M Y" }}</span>
+                            </div>
+                            {% if review.comment %}<p style="font-size:.875rem; color:#4b4540; margin:0;">{{ review.comment }}</p>{% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Popup -->
+<div class="popup-overlay" id="popupOverlay" onclick="if(event.target===this)closePopup()">
+    <div class="popup">
+        <button class="popup-close" onclick="closePopup()">✕</button>
+        <div style="font-family:var(--font-display);font-size:1.15rem;letter-spacing:-0.3px;margin-bottom:14px;" id="popupTitle"></div>
+        <div class="popup-row"><span style="color:var(--muted);">Date &amp; time</span><span id="popupDatetime" style="font-weight:500;"></span></div>
+        <div class="popup-row"><span style="color:var(--muted);">Duration</span><span id="popupDuration" style="font-weight:500;"></span></div>
+        <div class="popup-row"><span style="color:var(--muted);">Mode</span><span id="popupMode" style="font-weight:500;"></span></div>
+        <div class="popup-row" id="popupAreaRow"><span style="color:var(--muted);">Area</span><span id="popupArea" style="font-weight:500;"></span></div>
+        <div class="popup-row"><span style="color:var(--muted);">Rate</span><span style="font-weight:500;">€{{ coach.hourly_rate }}/hr</span></div>
+        <div style="font-size:.78rem;color:#4b5563;background:var(--canvas);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-top:14px;" id="popupNotice"></div>
+        <div style="display:flex;gap:10px;margin-top:18px;">
+            {% if user.is_authenticated and user.role == "STUDENT" %}
+                <a id="popupBookBtn" href="#" class="lu-btn lu-btn-primary" style="flex:1;justify-content:center;">Book this slot →</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="lu-btn lu-btn-primary" style="flex:1;justify-content:center;">Log in to book</a>
+            {% endif %}
+            <button class="lu-btn lu-btn-outline" onclick="closePopup()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const EVENTS = {{ calendar_events_json|safe }};
+
+function showView(v) {
+    document.getElementById('calendar-wrapper').style.display = v==='calendar' ? 'block' : 'none';
+    document.getElementById('list-wrapper').style.display     = v==='list'     ? 'block' : 'none';
+    document.getElementById('tab-calendar').classList.toggle('active', v==='calendar');
+    document.getElementById('tab-list').classList.toggle('active',     v==='list');
+    if (v==='calendar' && window._cal) window._cal.render();
+}
+
+function pad(n) { return String(n).padStart(2,'0'); }
+function fmt(d) {
+    const D=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${D[d.getDay()]} ${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function openPopup(info) {
+    info.jsEvent.preventDefault();
+    const p=info.event.extendedProps, s=info.event.start, e=info.event.end;
+    const mins=Math.round((e-s)/60000), h=Math.floor(mins/60), r=mins%60;
+    document.getElementById('popupTitle').textContent    = p.skill;
+    document.getElementById('popupDatetime').textContent = `${fmt(s)} → ${pad(e.getHours())}:${pad(e.getMinutes())}`;
+    document.getElementById('popupDuration').textContent = h>0 ? (r>0?`${h}h ${r}m`:`${h}h`) : `${mins}m`;
+    document.getElementById('popupMode').textContent     = p.mode;
+    const areaRow = document.getElementById('popupAreaRow');
+    if (p.area) { areaRow.style.display='flex'; document.getElementById('popupArea').textContent=p.area; }
+    else { areaRow.style.display='none'; }
+    document.getElementById('popupNotice').textContent = p.mode==='In person'
+        ? 'ℹ️ In-person bookings are sent to the coach for approval.'
+        : '✅ Online bookings confirm instantly.';
+    const btn = document.getElementById('popupBookBtn');
+    if (btn) btn.href = `/slot/${p.slotId}/book/`;
+    document.getElementById('popupOverlay').classList.add('open');
+}
+
+function closePopup() { document.getElementById('popupOverlay').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key==='Escape') closePopup(); });
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!EVENTS.length) return;
+    window._cal = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'timeGridWeek',
+        initialDate: new Date(EVENTS[0].start),
+        headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek,timeGridDay' },
+        buttonText: { today:'Today', month:'Month', week:'Week', day:'Day' },
+        events: EVENTS,
+        allDaySlot: false,
+        slotMinTime: '07:00:00', slotMaxTime: '22:00:00',
+        nowIndicator: true, height: 'auto',
+        eventClick: openPopup,
+        eventDidMount(info) {
+            const p=info.event.extendedProps;
+            info.el.title=`${p.skill} · ${p.mode}${p.area?' · '+p.area:''}`;
+            if (info.event.start < new Date()) info.el.style.opacity='0.45';
+        },
+    });
+    window._cal.render();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "core/base.html" %}
+
+{% block title %}Join LevelUp!{% endblock %}
+
+{% block extra_head %}
+<style>
+    .signup-shell {
+        max-width: 720px;
+        margin: 48px auto 0;
+        text-align: center;
+    }
+    .signup-title {
+        font-family: var(--font-display);
+        font-size: 2rem;
+        letter-spacing: -0.8px;
+        margin-bottom: 8px;
+    }
+    .signup-sub {
+        color: var(--muted);
+        margin-bottom: 40px;
+        font-size: .95rem;
+    }
+    .signup-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        text-align: left;
+    }
+    @media (max-width: 600px) { .signup-cards { grid-template-columns: 1fr; } }
+
+    .signup-option {
+        background: var(--card-bg);
+        border: 2px solid var(--border);
+        border-radius: 18px;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        transition: border-color .18s, box-shadow .18s;
+        cursor: pointer;
+    }
+    .signup-option:hover {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(26,107,60,.1);
+    }
+    .signup-option.option-coach:hover {
+        border-color: var(--ink);
+        box-shadow: 0 0 0 3px rgba(13,13,13,.08);
+    }
+    .option-icon {
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.6rem;
+    }
+    .option-icon-student { background: #dcfce7; }
+    .option-icon-coach   { background: #fef3c7; }
+    .option-title {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        letter-spacing: -0.3px;
+    }
+    .option-desc { font-size: .845rem; color: var(--muted); line-height: 1.55; }
+    .option-perks { list-style: none; padding: 0; }
+    .option-perks li {
+        font-size: .82rem;
+        color: var(--muted);
+        padding: 2px 0;
+    }
+    .option-perks li::before { content: '✓ '; color: var(--accent); font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="signup-shell lu-fadein">
+    <h1 class="signup-title">How will you use LevelUp?</h1>
+    <p class="signup-sub">Choose your account type to get started. It only takes a minute.</p>
+
+    <div class="signup-cards">
+        <!-- Student -->
+        <div class="signup-option">
+            <div class="option-icon option-icon-student">🎓</div>
+            <div class="option-title">Student or Parent</div>
+            <div class="option-desc">Browse instructors, pick a time slot, and book instantly. No back-and-forth required.</div>
+            <ul class="option-perks">
+                <li>Browse verified instructors</li>
+                <li>Instant online booking</li>
+                <li>Manage all sessions in one place</li>
+            </ul>
+            <a href="{% url 'signup_student' %}" class="lu-btn lu-btn-primary" style="margin-top:4px; text-align:center; justify-content:center;">
+                Sign up as Student
+            </a>
+        </div>
+
+        <!-- Coach -->
+        <div class="signup-option option-coach">
+            <div class="option-icon option-icon-coach">🏅</div>
+            <div class="option-title">Coach or Teacher</div>
+            <div class="option-desc">Publish your availability and let students book automatically. Reduce admin, grow your lesson schedule.</div>
+            <ul class="option-perks">
+                <li>Set your own availability</li>
+                <li>Students book without messaging you</li>
+                <li>Accept or decline in-person requests</li>
+            </ul>
+            <a href="{% url 'signup_coach' %}" class="lu-btn lu-btn-dark" style="margin-top:4px; text-align:center; justify-content:center;">
+                Sign up as Coach
+            </a>
+        </div>
+    </div>
+
+    <p style="margin-top:28px; font-size:.84rem; color:var(--muted);">
+        Already have an account? <a href="{% url 'login' %}" style="color:var(--accent); font-weight:500; text-decoration:none;">Log in</a>
+    </p>
+</div>
+{% endblock %}

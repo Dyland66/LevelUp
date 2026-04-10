@@ -1,0 +1,78 @@
+{% extends "core/base.html" %}
+
+{% block title %}Cancel Booking · LevelUp!{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cancel-shell { max-width: 500px; }
+    .cancel-detail {
+        background: var(--cream);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 20px 0;
+    }
+    .cancel-row {
+        display: flex; justify-content: space-between; gap:16px;
+        font-size: .875rem; padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .cancel-row:last-child { border-bottom: none; }
+    .cancel-label { color: var(--muted); }
+    .cancel-value { font-weight: 500; text-align: right; }
+    .cancel-warning {
+        display: flex; gap: 10px; align-items: flex-start;
+        background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+        padding: 12px 14px; font-size: .83rem; color: #7f1d1d; margin-top:4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cancel-shell lu-fadein">
+    <div style="margin-bottom:20px;">
+        <a href="{% url 'student_upcoming' %}" style="font-size:.84rem; color:var(--muted); text-decoration:none;">← Back to my sessions</a>
+    </div>
+
+    <div class="lu-section-title">Cancel this booking?</div>
+    <div class="lu-section-sub">This action cannot be undone. The slot will be released for other students.</div>
+
+    <div class="cancel-detail">
+        <div class="cancel-row">
+            <span class="cancel-label">Session</span>
+            <span class="cancel-value">{{ booking.slot.skill.name }}</span>
+        </div>
+        <div class="cancel-row">
+            <span class="cancel-label">Coach</span>
+            <span class="cancel-value">{{ booking.slot.coach.user.full_name }}</span>
+        </div>
+        <div class="cancel-row">
+            <span class="cancel-label">Date &amp; time</span>
+            <span class="cancel-value">{{ booking.slot.start_datetime|date:"D j M Y, H:i" }}</span>
+        </div>
+        {% if booking.child_profile %}
+            <div class="cancel-row">
+                <span class="cancel-label">Booked for</span>
+                <span class="cancel-value">{{ booking.child_profile.full_name }}</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="cancel-warning">
+        ⚠️ Cancellations are only allowed up to 24 hours before the session. You are within that window now.
+        The coach will be notified by email.
+    </div>
+
+    <form method="post" style="margin-top: 20px;">
+        {% csrf_token %}
+        <div style="display:flex; gap:10px;">
+            <button type="submit" class="lu-btn lu-btn-danger" style="flex:1; justify-content:center; padding:12px;">
+                Yes, cancel this booking
+            </button>
+            <a href="{% url 'student_upcoming' %}" class="lu-btn lu-btn-outline" style="justify-content:center; padding:12px;">
+                Keep booking
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
