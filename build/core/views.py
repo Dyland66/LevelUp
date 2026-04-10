@@ -409,6 +409,46 @@ def coach_dashboard(request):
                 return redirect("coach_dashboard")
             messages.error(request, "Fix the errors below.")
 
+    # Build calendar events — available (coloured) and booked (grey)
+    all_slots = SessionSlot.objects.filter(
+        coach=coach,
+        status__in=[SessionSlot.Status.AVAILABLE, SessionSlot.Status.BOOKED]
+    ).select_related("skill", "area").order_by("start_datetime")
+
+    dashboard_calendar_events = []
+    for slot in all_slots:
+        area_str = slot.area.name if slot.area else ""
+        if slot.status == SessionSlot.Status.AVAILABLE:
+            if slot.mode == SessionSlot.Mode.IN_PERSON:
+                bg = "#b45309"
+                label = f"{slot.skill.name} — 📍 {area_str}" if area_str else f"{slot.skill.name} — 📍 In person"
+            else:
+                bg = "#1a6b3c" if coach.category.name == "Grinds" else "#5b3fd4" if coach.category.name == "Music" else "#0369a1"
+                label = f"{slot.skill.name} — 💻 Online"
+        else:
+            bg = "#6b7280"
+            try:
+                student_name = slot.booking.display_name()
+            except Exception:
+                student_name = "Booked"
+            label = f"{slot.skill.name} — ✓ {student_name}"
+
+        dashboard_calendar_events.append({
+            "id": slot.id,
+            "title": label,
+            "start": slot.start_datetime.isoformat(),
+            "end": slot.end_datetime.isoformat(),
+            "backgroundColor": bg,
+            "borderColor": "transparent",
+            "textColor": "#ffffff",
+            "extendedProps": {
+                "status": slot.status,
+                "mode": slot.get_mode_display(),
+                "area": area_str,
+                "skill": slot.skill.name,
+            }
+        })
+
     context = {
         "coach": coach,
         "slot_form": slot_form,
@@ -419,6 +459,7 @@ def coach_dashboard(request):
         "avg_rating": coach.average_rating(),
         "review_count": coach.review_count(),
         "recent_reviews": coach.reviews.order_by("-created_at")[:5],
+        "dashboard_calendar_events_json": json.dumps(dashboard_calendar_events),
     }
     return render(request, "core/coach_dashboard.html", context)
 
@@ -469,4 +510,4 @@ def coach_set_meeting_link(request, booking_id):
         form.save()
         messages.success(request, "Meeting link updated.")
         return redirect("coach_dashboard")
-    return render(request, "core/coach_meeting_link.html", {"booking": booking, "form": form})
+    return render(request, "core/coach_meeting_link.html", {"booking": booking, "form": form})# PATCH MARKER - calendar events added above context

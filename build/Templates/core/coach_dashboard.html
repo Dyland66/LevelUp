@@ -2,9 +2,35 @@
 
 {% block title %}Dashboard · LevelUp!{% endblock %}
 
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<style>
+    #dashboard-calendar-wrapper {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        box-shadow: var(--shadow);
+    }
+    .fc { font-family: var(--font-body) !important; font-size: .875rem; }
+    .fc .fc-toolbar-title { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: -0.3px; }
+    .fc .fc-button { background: var(--ink) !important; border-color: var(--ink) !important; border-radius: 8px !important; font-family: var(--font-body) !important; font-size: .78rem !important; padding: 5px 11px !important; box-shadow: none !important; text-transform: none !important; }
+    .fc .fc-button:hover { background: #333 !important; }
+    .fc .fc-button-active { background: var(--accent) !important; border-color: var(--accent) !important; }
+    .fc .fc-daygrid-day-number, .fc .fc-col-header-cell-cushion { color: var(--ink); text-decoration: none; font-size: .8rem; }
+    .fc .fc-day-today { background: #f0fdf4 !important; }
+    .fc-event { cursor: default !important; border-radius: 6px !important; padding: 2px 6px !important; font-size: .76rem !important; border: none !important; }
+    .fc .fc-timegrid-slot { height: 36px !important; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); margin-bottom: 14px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<!-- Rating summary banner (only shown once there are reviews) -->
+<!-- Rating summary banner -->
 {% if review_count %}
 <div class="lu-card" style="margin-bottom:20px; border-left:3px solid #f59e0b;">
     <div class="lu-card-body" style="padding:14px 20px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
@@ -93,14 +119,19 @@
             </form>
         </div>
     </div>
-    
-    <!-- Available Slots -->
-    <div class="lu-card">
+
+</div>
+
+<!-- ── Available Slots + Calendar side by side ───────────────────────────── -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-bottom:28px; align-items:start;">
+
+    <!-- Available Slots (moved here from above) -->
+    <div class="lu-card" style="height:100%;">
         <div class="lu-card-head">
-            <div class="lu-card-title">📅 My available slots</div>
+            <div class="lu-card-title">🟢 Available slots</div>
             <span class="lu-badge lu-badge-neutral">{{ available_slots|length }}</span>
         </div>
-        <div class="lu-card-body">
+        <div class="lu-card-body" style="max-height:480px; overflow-y:auto;">
             <p style="font-size:.82rem; color:var(--muted); margin-bottom:16px;">
                 Slots students can currently see and book.
             </p>
@@ -121,9 +152,26 @@
                 </div>
             {% empty %}
                 <div style="text-align:center; padding:24px; color:var(--muted); font-size:.875rem;">
-                    No available slots yet. Create one using the form →
+                    No available slots yet. Create one using the forms above.
                 </div>
             {% endfor %}
+        </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="lu-card" style="height:100%;">
+        <div class="lu-card-head">
+            <div class="lu-card-title">📅 My schedule</div>
+        </div>
+        <div class="lu-card-body">
+            <div class="legend" style="margin-bottom:12px;">
+                <span><span class="legend-dot" style="background:#b45309;"></span> In person</span>
+                <span><span class="legend-dot" style="background:{% if coach.category.name == 'Grinds' %}#1a6b3c{% elif coach.category.name == 'Music' %}#5b3fd4{% else %}#0369a1{% endif %};"></span> Online</span>
+                <span><span class="legend-dot" style="background:#6b7280;"></span> Booked</span>
+            </div>
+            <div id="dashboard-calendar-wrapper">
+                <div id="dashboard-calendar"></div>
+            </div>
         </div>
     </div>
 
@@ -223,5 +271,33 @@
     </div>
 
 </div>
+
+<script>
+const DASHBOARD_EVENTS = {{ dashboard_calendar_events_json|safe }};
+
+document.addEventListener('DOMContentLoaded', function () {
+    const cal = new FullCalendar.Calendar(document.getElementById('dashboard-calendar'), {
+        initialView: 'timeGridWeek',
+        initialDate: DASHBOARD_EVENTS.length ? new Date(DASHBOARD_EVENTS[0].start) : new Date(),
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+        buttonText: { today: 'Today', month: 'Month', week: 'Week', day: 'Day' },
+        events: DASHBOARD_EVENTS,
+        allDaySlot: false,
+        slotMinTime: '10:00:00',
+        slotMaxTime: '20:00:00',
+        nowIndicator: true,
+        height: 'auto',
+        // No click handler — coach view is read-only on the calendar
+        eventDidMount(info) {
+            const p = info.event.extendedProps;
+            info.el.title = `${p.skill} · ${p.mode}${p.area ? ' · ' + p.area : ''} · ${p.status}`;
+            if (info.event.start < new Date() && p.status === 'AVAILABLE') {
+                info.el.style.opacity = '0.45';
+            }
+        },
+    });
+    cal.render();
+});
+</script>
 
 {% endblock %}
