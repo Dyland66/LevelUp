@@ -3,7 +3,6 @@ Django settings for LevelUp project.
 """
 
 from pathlib import Path
-import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -95,9 +94,6 @@ LOGOUT_REDIRECT_URL = '/'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@levelup.ie'
 
-ALLOWED_HOSTS = ['*']
-DEBUG = False
-
 
 GOOGLE_MAPS_API_KEY = 'AIzaSyBKwIABYQJ1zC7nlALJm8cSVGz8_uU4Los'
 # ── Production SMTP example (uncomment and fill in for deployment) ──────────
@@ -107,4 +103,3 @@ GOOGLE_MAPS_API_KEY = 'AIzaSyBKwIABYQJ1zC7nlALJm8cSVGz8_uU4Los'
 # EMAIL_USE_TLS   = True
 # EMAIL_HOST_USER = 'your-email@gmail.com'
 # EMAIL_HOST_PASSWORD = 'your-app-password'
-
