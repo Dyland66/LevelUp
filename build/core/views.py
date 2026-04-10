@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import datetime
 import json
 
@@ -11,52 +9,43 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .forms import (
-    StudentSignUpForm,
-    CoachSignUpForm,
-    SubscriptionSelectForm,
-    ProfileEditForm,
-    CoachProfileEditForm,
-    FindLessonsForm,
-    SessionSlotForm,
-    BookingMeetingLinkForm,
-    BookingConfirmForm,
-    ChildProfileForm,
-    ReviewForm,
-    RecurringAvailabilityForm,
+    StudentSignUpForm, CoachSignUpForm, SubscriptionSelectForm,
+    ProfileEditForm, CoachProfileEditForm, FindLessonsForm,
+    SessionSlotForm, BookingMeetingLinkForm, BookingConfirmForm,
+    ChildProfileForm, ReviewForm, RecurringAvailabilityForm,
 )
 from .models import (
-    User,
-    Category,
-    Skill,
-    Area,
-    CoachProfile,
-    CoachSubscription,
-    ChildProfile,
-    SessionSlot,
-    Booking,
-    Review,
+    User, Category, Skill, Area, CoachProfile, CoachSubscription,
+    ChildProfile, SessionSlot, Booking, Review,
 )
 
+
+# ── Helper: seed categories, skills and areas ─────────────────────────────────
+# Called on the home page so the data always exists in the database.
 
 def _seed_data():
     grinds, _ = Category.objects.get_or_create(name="Grinds")
     sports, _ = Category.objects.get_or_create(name="Sports")
     music,  _ = Category.objects.get_or_create(name="Music")
+
     for s in [
         "Maths", "Irish", "English", "Biology", "Chemistry", "Physics",
         "Agricultural Science", "Accounting", "Business", "Economics",
         "Geography", "History", "Art", "Music", "Home Economics",
         "French", "German", "Spanish", "Italian", "Japanese", "Mandarin Chinese",
-        "Latin", "Classical Studies", "Religious Education",
-        "Physical Education", "Computer Science", "Design and Communication Graphics",
+        "Latin", "Classical Studies", "Religious Education", "Physical Education",
+        "Computer Science", "Design and Communication Graphics",
         "Construction Studies", "Engineering", "Technology",
         "Applied Maths", "Politics and Society",
     ]:
         Skill.objects.get_or_create(category=grinds, name=s)
+
     for s in ["Padel", "Gym PT", "Football Coaching", "Golf"]:
         Skill.objects.get_or_create(category=sports, name=s)
+
     for s in ["Guitar", "Piano", "Violin"]:
         Skill.objects.get_or_create(category=music, name=s)
+
     for a in ["Dublin City", "Dublin 2", "Tallaght", "Swords", "Cork City", "Galway City"]:
         Area.objects.get_or_create(name=a)
 
@@ -65,8 +54,7 @@ def _seed_data():
 
 def home(request):
     _seed_data()
-    categories = Category.objects.all().order_by("name")
-    return render(request, "core/home.html", {"categories": categories})
+    return render(request, "core/home.html", {"categories": Category.objects.all()})
 
 
 def about(request):
@@ -102,6 +90,7 @@ def signup_coach(request):
 
 
 def signup_coach_subscription(request):
+    # Redirect away if the user is not a coach or already has a subscription
     if not request.user.is_authenticated or request.user.role != User.Role.COACH:
         return redirect("signup_coach")
     if hasattr(request.user, "subscription"):
@@ -161,16 +150,15 @@ def find_lessons(request):
     _seed_data()
     form = FindLessonsForm(request.GET or None)
 
-    # Only show results if the user has actually submitted the form
+    # Only show results after the user has submitted the search form
     searched = bool(request.GET)
-
-    qs = SessionSlot.objects.filter(
-        status=SessionSlot.Status.AVAILABLE
-    ).select_related("coach", "coach__user", "skill", "skill__category", "area")
-
     coach_cards = {}
 
     if searched and form.is_valid():
+        # Start with all available slots
+        qs = SessionSlot.objects.filter(status=SessionSlot.Status.AVAILABLE).select_related("coach", "coach__user", "skill", "skill__category", "area")
+
+        # Apply whichever filters the user selected
         if form.cleaned_data.get("category"):
             qs = qs.filter(skill__category=form.cleaned_data["category"])
         if form.cleaned_data.get("skill"):
@@ -180,26 +168,27 @@ def find_lessons(request):
         if form.cleaned_data.get("area"):
             qs = qs.filter(area=form.cleaned_data["area"])
 
+        # Build one card per coach showing their next available slot
         for slot in qs.order_by("start_datetime"):
             if slot.coach_id not in coach_cards:
                 coach_cards[slot.coach_id] = {
-                    "coach": slot.coach,
-                    "next_slot": slot,
-                    "avg_rating": slot.coach.average_rating(),
+                    "coach":        slot.coach,
+                    "next_slot":    slot,
+                    "avg_rating":   slot.coach.average_rating(),
                     "review_count": slot.coach.review_count(),
                 }
 
     return render(request, "core/find_lessons.html", {
-        "form": form,
+        "form":        form,
         "coach_cards": list(coach_cards.values()),
-        "searched": searched,
+        "searched":    searched,
     })
 
 
 def coach_detail(request, coach_id):
     coach = get_object_or_404(CoachProfile.objects.select_related("user", "category"), pk=coach_id)
 
-    # Respect a mode filter passed from the find lessons page via GET param
+    # Optional mode filter passed from the find lessons page
     mode_filter = request.GET.get("mode", "")
 
     slots = coach.slots.filter(status=SessionSlot.Status.AVAILABLE).select_related("skill", "area").order_by("start_datetime")
@@ -208,43 +197,43 @@ def coach_detail(request, coach_id):
 
     reviews = coach.reviews.select_related("booking__student").order_by("-created_at")
 
+    # Build the list of events for FullCalendar
     calendar_events = []
     for slot in slots:
-        eircode_str = f" ({slot.venue_eircode})" if slot.venue_eircode else ""
         area_str = slot.area.name if slot.area else ""
 
-        # Show mode on the face of each slot so it's visible without clicking
+        # Colour and label by mode
         if slot.mode == SessionSlot.Mode.IN_PERSON:
-            mode_label = f"📍 {area_str}" if area_str else "📍 In person"
-            bg_color = "#b45309"  # warm amber for in-person — visually distinct
+            bg    = "#b45309"
+            label = f"{slot.skill.name} — 📍 {area_str}" if area_str else f"{slot.skill.name} — 📍 In person"
         else:
-            mode_label = "💻 Online"
-            bg_color = "#1a6b3c" if coach.category.name == "Grinds" else "#5b3fd4" if coach.category.name == "Music" else "#0369a1"
+            bg    = "#1a6b3c" if coach.category.name == "Grinds" else "#5b3fd4" if coach.category.name == "Music" else "#0369a1"
+            label = f"{slot.skill.name} — 💻 Online"
 
         calendar_events.append({
-            "id": slot.id,
-            "title": f"{slot.skill.name} — {mode_label}",
-            "start": slot.start_datetime.isoformat(),
-            "end": slot.end_datetime.isoformat(),
-            "url": f"/slot/{slot.id}/book/",
+            "id":              slot.id,
+            "title":           label,
+            "start":           slot.start_datetime.isoformat(),
+            "end":             slot.end_datetime.isoformat(),
+            "url":             f"/slot/{slot.id}/book/",
+            "backgroundColor": bg,
+            "borderColor":     "transparent",
+            "textColor":       "#ffffff",
             "extendedProps": {
-                "mode": slot.get_mode_display(),
-                "area": f"{area_str}{eircode_str}",
-                "skill": slot.skill.name,
+                "mode":   slot.get_mode_display(),
+                "area":   f"{area_str} ({slot.venue_eircode})" if slot.venue_eircode else area_str,
+                "skill":  slot.skill.name,
                 "slotId": slot.id,
             },
-            "backgroundColor": bg_color,
-            "borderColor": "transparent",
-            "textColor": "#ffffff",
         })
 
     return render(request, "core/coach_detail.html", {
-        "coach": coach,
-        "slots": slots,
-        "reviews": reviews,
-        "avg_rating": coach.average_rating(),
-        "review_count": coach.review_count(),
-        "mode_filter": mode_filter,
+        "coach":                coach,
+        "slots":                slots,
+        "reviews":              reviews,
+        "avg_rating":           coach.average_rating(),
+        "review_count":         coach.review_count(),
+        "mode_filter":          mode_filter,
         "calendar_events_json": json.dumps(calendar_events),
     })
 
@@ -265,10 +254,11 @@ def book_slot(request, slot_id):
                 student=request.user,
                 child_profile=form.cleaned_data.get("child_profile"),
             )
+            # Save student address and coordinates for in-person grinds/music
             if slot.mode == SessionSlot.Mode.IN_PERSON and slot.skill.category.name.lower() != "sports":
                 booking.student_location = form.cleaned_data.get("student_location", "")
-                booking.student_lat = form.cleaned_data.get("student_lat") or None
-                booking.student_lng = form.cleaned_data.get("student_lng") or None
+                booking.student_lat      = form.cleaned_data.get("student_lat") or None
+                booking.student_lng      = form.cleaned_data.get("student_lng") or None
                 booking.save(update_fields=["student_location", "student_lat", "student_lng"])
             return redirect("booking_detail", booking_id=booking.id)
         except ValidationError as e:
@@ -297,6 +287,7 @@ def student_cancel_booking(request, booking_id):
         messages.error(request, "Cannot cancel — session starts in less than 24 hours.")
         return redirect("student_upcoming")
     if request.method == "POST":
+        # Cancel the booking and free the slot back up
         booking.status = Booking.Status.CANCELLED
         booking.save(update_fields=["status"])
         booking.slot.status = SessionSlot.Status.AVAILABLE
@@ -308,13 +299,17 @@ def student_cancel_booking(request, booking_id):
 
 @login_required
 def booking_detail(request, booking_id):
-    booking = get_object_or_404(Booking.objects.select_related(
-        "slot", "slot__coach", "slot__coach__user", "slot__skill", "slot__area", "child_profile"
-    ), pk=booking_id)
+    booking = get_object_or_404(
+        Booking.objects.select_related("slot", "slot__coach", "slot__coach__user", "slot__skill", "slot__area", "child_profile"),
+        pk=booking_id,
+    )
+    # Only the student or the coach involved can view this booking
     if request.user.role == User.Role.STUDENT and booking.student_id != request.user.id:
         raise PermissionDenied
     if request.user.role == User.Role.COACH and booking.slot.coach.user_id != request.user.id:
         raise PermissionDenied
+
+    # Show the review button only if the session has ended and no review exists yet
     can_review = (
         request.user.role == User.Role.STUDENT
         and booking.status == Booking.Status.CONFIRMED
@@ -329,14 +324,17 @@ def leave_review(request, booking_id):
     if request.user.role != User.Role.STUDENT:
         raise PermissionDenied
     booking = get_object_or_404(Booking.objects.select_related("slot", "slot__coach"), pk=booking_id, student=request.user)
+
+    # Only allow reviews on completed confirmed sessions with no review yet
     if booking.status != Booking.Status.CONFIRMED or booking.slot.end_datetime >= timezone.now() or hasattr(booking, "review"):
         messages.error(request, "Review not available for this booking.")
         return redirect("booking_detail", booking_id=booking_id)
+
     form = ReviewForm(request.POST or None)
     if form.is_valid():
         review = form.save(commit=False)
         review.booking = booking
-        review.coach = booking.slot.coach
+        review.coach   = booking.slot.coach
         review.save()
         messages.success(request, "Review submitted!")
         return redirect("booking_detail", booking_id=booking_id)
@@ -364,7 +362,7 @@ def coach_dashboard(request):
         raise PermissionDenied
     coach = get_object_or_404(CoachProfile, user=request.user)
 
-    slot_form = SessionSlotForm(coach_profile=coach)
+    slot_form      = SessionSlotForm(coach_profile=coach)
     recurring_form = RecurringAvailabilityForm(coach_profile=coach)
 
     if request.method == "POST":
@@ -381,16 +379,18 @@ def coach_dashboard(request):
         elif action == "create_recurring":
             recurring_form = RecurringAvailabilityForm(request.POST, coach_profile=coach)
             if recurring_form.is_valid():
-                d = recurring_form.cleaned_data
+                d          = recurring_form.cleaned_data
                 target_dow = int(d["day_of_week"])
-                duration = datetime.timedelta(minutes=int(d["slot_duration_minutes"]))
-                today = datetime.date.today()
+                duration   = datetime.timedelta(minutes=int(d["slot_duration_minutes"]))
+                today      = datetime.date.today()
                 days_ahead = (target_dow - today.weekday()) % 7 or 7
                 first_date = today + datetime.timedelta(days=days_ahead)
-                created = 0
+                created    = 0
+
+                # Generate one slot per week for the requested number of weeks
                 for week in range(int(d["weeks_ahead"])):
                     slot_date = first_date + datetime.timedelta(weeks=week)
-                    start_dt = timezone.make_aware(datetime.datetime.combine(slot_date, d["start_time"]))
+                    start_dt  = timezone.make_aware(datetime.datetime.combine(slot_date, d["start_time"]))
                     slot = SessionSlot(
                         coach=coach, skill=d["skill"], mode=d["mode"],
                         area=d["area"], venue_eircode=d["venue_eircode"],
@@ -401,7 +401,8 @@ def coach_dashboard(request):
                         slot.save()
                         created += 1
                     except Exception:
-                        pass
+                        pass  # skip slots that fail validation (e.g. overlaps)
+
                 if created:
                     messages.success(request, f"{created} slot(s) created.")
                 else:
@@ -409,7 +410,7 @@ def coach_dashboard(request):
                 return redirect("coach_dashboard")
             messages.error(request, "Fix the errors below.")
 
-    # Build calendar events — available (coloured) and booked (grey)
+    # Build calendar events for the coach's schedule view
     all_slots = SessionSlot.objects.filter(
         coach=coach,
         status__in=[SessionSlot.Status.AVAILABLE, SessionSlot.Status.BOOKED]
@@ -418,14 +419,17 @@ def coach_dashboard(request):
     dashboard_calendar_events = []
     for slot in all_slots:
         area_str = slot.area.name if slot.area else ""
+
         if slot.status == SessionSlot.Status.AVAILABLE:
+            # Colour available slots by mode
             if slot.mode == SessionSlot.Mode.IN_PERSON:
-                bg = "#b45309"
+                bg    = "#b45309"
                 label = f"{slot.skill.name} — 📍 {area_str}" if area_str else f"{slot.skill.name} — 📍 In person"
             else:
-                bg = "#1a6b3c" if coach.category.name == "Grinds" else "#5b3fd4" if coach.category.name == "Music" else "#0369a1"
+                bg    = "#1a6b3c" if coach.category.name == "Grinds" else "#5b3fd4" if coach.category.name == "Music" else "#0369a1"
                 label = f"{slot.skill.name} — 💻 Online"
         else:
+            # Booked slots show grey with the student's name
             bg = "#6b7280"
             try:
                 student_name = slot.booking.display_name()
@@ -434,34 +438,28 @@ def coach_dashboard(request):
             label = f"{slot.skill.name} — ✓ {student_name}"
 
         dashboard_calendar_events.append({
-            "id": slot.id,
-            "title": label,
-            "start": slot.start_datetime.isoformat(),
-            "end": slot.end_datetime.isoformat(),
+            "id":              slot.id,
+            "title":           label,
+            "start":           slot.start_datetime.isoformat(),
+            "end":             slot.end_datetime.isoformat(),
             "backgroundColor": bg,
-            "borderColor": "transparent",
-            "textColor": "#ffffff",
-            "extendedProps": {
-                "status": slot.status,
-                "mode": slot.get_mode_display(),
-                "area": area_str,
-                "skill": slot.skill.name,
-            }
+            "borderColor":     "transparent",
+            "textColor":       "#ffffff",
+            "extendedProps":   {"status": slot.status, "mode": slot.get_mode_display(), "area": area_str, "skill": slot.skill.name},
         })
 
-    context = {
-        "coach": coach,
-        "slot_form": slot_form,
+    return render(request, "core/coach_dashboard.html", {
+        "coach":          coach,
+        "slot_form":      slot_form,
         "recurring_form": recurring_form,
-        "pending_bookings": Booking.objects.filter(slot__coach=coach, status=Booking.Status.PENDING).select_related("student", "slot", "slot__skill", "slot__area", "child_profile"),
+        "pending_bookings":  Booking.objects.filter(slot__coach=coach, status=Booking.Status.PENDING).select_related("student", "slot", "slot__skill", "slot__area", "child_profile"),
         "upcoming_bookings": Booking.objects.filter(slot__coach=coach, status=Booking.Status.CONFIRMED).select_related("student", "slot", "slot__skill", "slot__area", "child_profile"),
-        "available_slots": SessionSlot.objects.filter(coach=coach, status=SessionSlot.Status.AVAILABLE).select_related("skill", "area").order_by("start_datetime"),
-        "avg_rating": coach.average_rating(),
-        "review_count": coach.review_count(),
-        "recent_reviews": coach.reviews.order_by("-created_at")[:5],
+        "available_slots":   SessionSlot.objects.filter(coach=coach, status=SessionSlot.Status.AVAILABLE).select_related("skill", "area").order_by("start_datetime"),
+        "avg_rating":        coach.average_rating(),
+        "review_count":      coach.review_count(),
+        "recent_reviews":    coach.reviews.order_by("-created_at")[:5],
         "dashboard_calendar_events_json": json.dumps(dashboard_calendar_events),
-    }
-    return render(request, "core/coach_dashboard.html", context)
+    })
 
 
 @login_required
@@ -469,7 +467,7 @@ def coach_cancel_slot(request, slot_id):
     if request.user.role != User.Role.COACH:
         raise PermissionDenied
     coach = get_object_or_404(CoachProfile, user=request.user)
-    slot = get_object_or_404(SessionSlot, pk=slot_id, coach=coach)
+    slot  = get_object_or_404(SessionSlot, pk=slot_id, coach=coach)
     if request.method == "POST" and slot.status == SessionSlot.Status.AVAILABLE:
         slot.status = SessionSlot.Status.CANCELLED
         slot.save(update_fields=["status"])
@@ -492,6 +490,7 @@ def coach_respond_booking(request, booking_id):
         elif request.POST.get("decision") == "reject":
             booking.status = Booking.Status.REJECTED
             booking.save(update_fields=["status"])
+            # Free the slot back up so another student can book it
             booking.slot.status = SessionSlot.Status.AVAILABLE
             booking.slot.save(update_fields=["status"])
             messages.success(request, "Booking rejected.")
@@ -510,4 +509,4 @@ def coach_set_meeting_link(request, booking_id):
         form.save()
         messages.success(request, "Meeting link updated.")
         return redirect("coach_dashboard")
-    return render(request, "core/coach_meeting_link.html", {"booking": booking, "form": form})# PATCH MARKER - calendar events added above context
+    return render(request, "core/coach_meeting_link.html", {"booking": booking, "form": form})
