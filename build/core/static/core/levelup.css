@@ -292,3 +292,17 @@ p { margin-bottom: 0; }
     font-size: 0.8rem;
 }
 .lu-footer a { color: rgba(255,255,255,.6); text-decoration: none; }
+
+/* ── AUTH PAGES (login, signup) ──────────────────── */
+/* Shared layout for the login and signup templates.  */
+.auth-shell { max-width: 480px; margin: 32px auto 0; }
+.auth-header { text-align: center; margin-bottom: 28px; }
+.auth-logo { font-family: var(--font-display); font-size: 1.4rem; letter-spacing: -0.5px; margin-bottom: 6px; }
+.auth-logo span { display: inline-block; width: 7px; height: 7px; background: var(--accent2); border-radius: 50%; margin-left: 2px; vertical-align: middle; }
+.auth-sub { color: var(--muted); font-size: .875rem; }
+.auth-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 28px; box-shadow: var(--shadow-lg); }
+.auth-card p { margin-bottom: 14px; }
+.auth-card label { display: block; font-size: .79rem; font-weight: 500; color: #4b4540; margin-bottom: 4px; }
+.auth-footer-link { text-align: center; margin-top: 20px; font-size: .84rem; color: var(--muted); }
+.auth-footer-link a { color: var(--accent); font-weight: 500; text-decoration: none; }
+.auth-footer-link a:hover { text-decoration: underline; }

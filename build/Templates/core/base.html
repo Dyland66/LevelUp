@@ -33,7 +33,7 @@
                     <a class="lu-btn lu-btn-ghost" href="{% url 'coach_dashboard' %}">Dashboard</a>
                 {% else %}
                     <a class="lu-btn lu-btn-ghost" href="{% url 'student_upcoming' %}">My Sessions</a>
-                <a class="lu-btn lu-btn-ghost" href="{% url 'child_profile_list' %}">Children</a>
+                <a class="lu-btn lu-btn-ghost" href="{% url 'child_profile_list' %}">Add under 18
                 {% endif %}
                 <a class="lu-btn lu-btn-ghost" href="{% url 'my_profile' %}">Profile</a>
                 <form method="post" action="{% url 'logout' %}" style="display:inline;">

@@ -77,6 +77,7 @@ class CoachProfileEditForm(forms.ModelForm):
 # ── FIND LESSONS FILTER ───────────────────────────────────────────────────────
 
 class FindLessonsForm(forms.Form):
+    coach_name = forms.CharField(required=False, label="Search Teachers/Coaches", widget=forms.TextInput(attrs={"placeholder": "Search by name\u2026"}))
     category = forms.ModelChoiceField(queryset=Category.objects.all(), required=False, empty_label="Any category")
     skill    = forms.ModelChoiceField(queryset=Skill.objects.select_related("category").all(), required=False, empty_label="Any subject / skill", label="Subject / Skill")
     mode     = forms.ChoiceField(choices=[("", "Any mode"), ("ONLINE", "Online"), ("IN_PERSON", "In person")], required=False)

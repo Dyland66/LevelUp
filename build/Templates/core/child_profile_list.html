@@ -1,6 +1,6 @@
 {% extends "core/base.html" %}
 
-{% block title %}Child Profiles · LevelUp!{% endblock %}
+{% block title %}Under 18s Profiles · LevelUp!{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -43,12 +43,12 @@
 <div class="children-shell lu-fadein">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
         <div>
-            <div class="lu-section-title">Child profiles</div>
+            <div class="lu-section-title">Under 18s profiles</div>
             <div class="lu-section-sub" style="margin-bottom:0;">
                 Book sessions on behalf of a minor in your care.
             </div>
         </div>
-        <a href="{% url 'child_profile_add' %}" class="lu-btn lu-btn-primary lu-btn-sm">+ Add child profile</a>
+        <a href="{% url 'child_profile_add' %}" class="lu-btn lu-btn-primary lu-btn-sm">+ Add under 18s profile</a>
     </div>
 
     {% if children %}
@@ -72,9 +72,8 @@
     {% else %}
         <div class="lu-card">
             <div class="lu-card-body" style="text-align:center; padding:48px; color:var(--muted);">
-                <div style="font-size:2rem; margin-bottom:12px;">👶</div>
-                No child profiles yet.<br>
-                <a href="{% url 'child_profile_add' %}" style="color:var(--accent); font-weight:500; text-decoration:none;">Add your first child profile →</a>
+                No under 18s profiles yet.<br>
+                <a href="{% url 'child_profile_add' %}" style="color:var(--accent); font-weight:500; text-decoration:none;">Add your first under 18s profile →</a>
             </div>
         </div>
     {% endif %}

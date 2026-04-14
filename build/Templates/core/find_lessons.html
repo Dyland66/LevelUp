@@ -98,11 +98,30 @@
 
     <!-- Filters -->
     <aside class="filter-sidebar">
+        <!-- Name search — standalone card -->
+        <div class="lu-card" style="margin-bottom:12px;">
+            <div class="lu-card-body">
+                <label class="lu-label" for="id_coach_name" id="coachNameLabel">Know who you're looking for?</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="id_coach_name" name="coach_name" placeholder="Search by name…" value="{{ form.coach_name.value|default_if_none:'' }}" form="filterForm" style="flex:1;">
+                    <button type="submit" form="filterForm" class="lu-btn lu-btn-dark lu-btn-sm">Go</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other filters -->
         <div class="lu-card">
             <div class="lu-card-body">
                 <div class="filter-title">Search filters</div>
                 <form method="get" class="filter-form" id="filterForm">
-                    {{ form.as_p }}
+                    {% for field in form %}
+                        {% if field.name != "coach_name" %}
+                            <p>
+                                <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                                {{ field }}
+                            </p>
+                        {% endif %}
+                    {% endfor %}
                     <button class="lu-btn lu-btn-dark" type="submit" style="width:100%; margin-top:4px;">Search</button>
                     <a class="lu-btn lu-btn-outline" href="{% url 'find_lessons' %}" style="width:100%; margin-top:8px; text-align:center; display:block;">Reset</a>
                 </form>

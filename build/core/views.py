@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -21,9 +22,18 @@ from .models import (
 
 
 # ── Helper: seed categories, skills and areas ─────────────────────────────────
-# Called on the home page so the data always exists in the database.
+# Ensures lookup data exists on first request.  Uses a module-level flag
+# so the database is only checked once per server start, not every request.
+# The same data is also created by:  python manage.py seed_coaches
+
+_SEEDED = False
+
 
 def _seed_data():
+    global _SEEDED
+    if _SEEDED:
+        return
+
     grinds, _ = Category.objects.get_or_create(name="Grinds")
     sports, _ = Category.objects.get_or_create(name="Sports")
     music,  _ = Category.objects.get_or_create(name="Music")
@@ -49,6 +59,29 @@ def _seed_data():
     for a in ["Dublin City", "Dublin 2", "Tallaght", "Swords", "Cork City", "Galway City"]:
         Area.objects.get_or_create(name=a)
 
+    _SEEDED = True
+
+
+# ── Helper: calendar event colour and label ───────────────────────────────────
+# Both the public coach page and the coach dashboard need to colour-code
+# calendar slots the same way, so this avoids duplicating that logic.
+
+def _slot_label_and_colour(slot, category_name, booked_name=None):
+    area_str = slot.area.name if slot.area else ""
+
+    # Booked slots show grey with the student's name
+    if booked_name:
+        return f"{slot.skill.name} — ✓ {booked_name}", "#6b7280"
+
+    # In-person slots are amber
+    if slot.mode == SessionSlot.Mode.IN_PERSON:
+        label = f"{slot.skill.name} — 📍 {area_str}" if area_str else f"{slot.skill.name} — 📍 In person"
+        return label, "#b45309"
+
+    # Online slots — colour depends on category
+    colours = {"Grinds": "#1a6b3c", "Music": "#5b3fd4"}
+    return f"{slot.skill.name} — 💻 Online", colours.get(category_name, "#0369a1")
+
 
 # ── Public pages ──────────────────────────────────────────────────────────────
 
@@ -66,6 +99,7 @@ def signup_choice(request):
 
 
 def signup_student(request):
+    # Create a student account, set the role, and log them in straight away
     form = StudentSignUpForm(request.POST or None)
     if form.is_valid():
         user = form.save(commit=False)
@@ -77,6 +111,7 @@ def signup_student(request):
 
 
 def signup_coach(request):
+    # Create a coach account with a linked CoachProfile, then redirect to subscription selection
     _seed_data()
     form = CoachSignUpForm(request.POST or None)
     if form.is_valid():
@@ -106,16 +141,19 @@ def signup_coach_subscription(request):
 
 @login_required
 def my_profile(request):
+    # Let any logged-in user edit their name, email, and profile photo
     form = ProfileEditForm(request.POST or None, request.FILES or None, instance=request.user)
     if form.is_valid():
         form.save()
         messages.success(request, "Profile updated.")
+        # Coaches go back to their dashboard; students stay on this page
         return redirect("coach_dashboard" if request.user.role == User.Role.COACH else "my_profile")
     return render(request, "core/my_profile.html", {"form": form})
 
 
 @login_required
 def child_profile_list(request):
+    # Show all child profiles belonging to this parent (students only)
     if request.user.role != User.Role.STUDENT:
         raise PermissionDenied
     return render(request, "core/child_profile_list.html", {"children": request.user.child_profiles.all()})
@@ -123,6 +161,7 @@ def child_profile_list(request):
 
 @login_required
 def child_profile_add(request):
+    # Let a parent add a child profile so they can book lessons on their behalf
     if request.user.role != User.Role.STUDENT:
         raise PermissionDenied
     form = ChildProfileForm(request.POST or None)
@@ -137,6 +176,7 @@ def child_profile_add(request):
 
 @login_required
 def child_profile_delete(request, child_id):
+    # Remove a child profile — only allowed via POST to prevent accidental deletion
     if request.user.role != User.Role.STUDENT:
         raise PermissionDenied
     child = get_object_or_404(ChildProfile, pk=child_id, parent=request.user)
@@ -147,6 +187,7 @@ def child_profile_delete(request, child_id):
 
 
 def find_lessons(request):
+    # Main search page — students filter available slots by category, skill, mode, area or name
     _seed_data()
     form = FindLessonsForm(request.GET or None)
 
@@ -167,8 +208,23 @@ def find_lessons(request):
             qs = qs.filter(mode=form.cleaned_data["mode"])
         if form.cleaned_data.get("area"):
             qs = qs.filter(area=form.cleaned_data["area"])
+        if form.cleaned_data.get("coach_name"):
+            # Name search: if multiple words, match first against forename and
+            # last against surname.  Single word uses OR to check both fields.
+            name = form.cleaned_data["coach_name"].strip()
+            parts = name.split()
+            if len(parts) > 1:
+                qs = qs.filter(
+                    coach__user__forename__icontains=parts[0],
+                    coach__user__surname__icontains=parts[-1],
+                )
+            else:
+                qs = qs.filter(
+                    Q(coach__user__forename__icontains=name)
+                    | Q(coach__user__surname__icontains=name)
+                )
 
-        # Build one card per coach showing their next available slot
+        # Group results by coach — each coach card shows their earliest available slot
         for slot in qs.order_by("start_datetime"):
             if slot.coach_id not in coach_cards:
                 coach_cards[slot.coach_id] = {
@@ -186,6 +242,7 @@ def find_lessons(request):
 
 
 def coach_detail(request, coach_id):
+    # Public coach profile page — shows bio, calendar of available slots, and reviews
     coach = get_object_or_404(CoachProfile.objects.select_related("user", "category"), pk=coach_id)
 
     # Optional mode filter passed from the find lessons page
@@ -200,15 +257,8 @@ def coach_detail(request, coach_id):
     # Build the list of events for FullCalendar
     calendar_events = []
     for slot in slots:
+        label, bg = _slot_label_and_colour(slot, coach.category.name)
         area_str = slot.area.name if slot.area else ""
-
-        # Colour and label by mode
-        if slot.mode == SessionSlot.Mode.IN_PERSON:
-            bg    = "#b45309"
-            label = f"{slot.skill.name} — 📍 {area_str}" if area_str else f"{slot.skill.name} — 📍 In person"
-        else:
-            bg    = "#1a6b3c" if coach.category.name == "Grinds" else "#5b3fd4" if coach.category.name == "Music" else "#0369a1"
-            label = f"{slot.skill.name} — 💻 Online"
 
         calendar_events.append({
             "id":              slot.id,
@@ -240,9 +290,11 @@ def coach_detail(request, coach_id):
 
 @login_required
 def book_slot(request, slot_id):
-    slot = get_object_or_404(SessionSlot.objects.select_related("coach", "coach__user", "skill", "area"), pk=slot_id)
+    # Book an available slot — students only. Uses create_booking() which
+    # prevents double-booking with a database lock.
     if request.user.role != User.Role.STUDENT:
         raise PermissionDenied
+    slot = get_object_or_404(SessionSlot.objects.select_related("coach", "coach__user", "skill", "area"), pk=slot_id)
 
     form = BookingConfirmForm(request.POST or None)
     form.fields["child_profile"].queryset = ChildProfile.objects.filter(parent=request.user)
@@ -270,6 +322,7 @@ def book_slot(request, slot_id):
 
 @login_required
 def student_upcoming(request):
+    # List all of this student's bookings (upcoming and past) in date order
     if request.user.role != User.Role.STUDENT:
         raise PermissionDenied
     bookings = Booking.objects.filter(student=request.user).select_related(
@@ -280,6 +333,7 @@ def student_upcoming(request):
 
 @login_required
 def student_cancel_booking(request, booking_id):
+    # Cancel a booking if >24 hours remain, and free the slot for other students
     if request.user.role != User.Role.STUDENT:
         raise PermissionDenied
     booking = get_object_or_404(Booking, pk=booking_id, student=request.user)
@@ -316,7 +370,7 @@ def booking_detail(request, booking_id):
         and booking.slot.end_datetime < timezone.now()
         and not hasattr(booking, "review")
     )
-    return render(request, "core/booking_detail.html", {"booking": booking, "can_review": can_review})
+    return render(request, "core/booking_detail.html", {"booking": booking, "can_review": can_review, "now": timezone.now()})
 
 
 @login_required
@@ -345,6 +399,7 @@ def leave_review(request, booking_id):
 
 @login_required
 def coach_profile_edit(request):
+    # Let a coach update their public profile (bio, skills, verified status)
     if request.user.role != User.Role.COACH:
         raise PermissionDenied
     coach = get_object_or_404(CoachProfile, user=request.user)
@@ -358,6 +413,7 @@ def coach_profile_edit(request):
 
 @login_required
 def coach_dashboard(request):
+    # Main hub for coaches — create slots, manage bookings, view schedule calendar
     if request.user.role != User.Role.COACH:
         raise PermissionDenied
     coach = get_object_or_404(CoachProfile, user=request.user)
@@ -368,7 +424,7 @@ def coach_dashboard(request):
     if request.method == "POST":
         action = request.POST.get("action")
 
-        if action == "create_slot":
+        if action == "create_slot": ### Single session creation
             slot_form = SessionSlotForm(request.POST, coach_profile=coach)
             if slot_form.is_valid():
                 slot_form.save()
@@ -376,13 +432,14 @@ def coach_dashboard(request):
                 return redirect("coach_dashboard")
             messages.error(request, "Fix the errors below.")
 
-        elif action == "create_recurring":
+        elif action == "create_recurring": ### Recurring session creation
             recurring_form = RecurringAvailabilityForm(request.POST, coach_profile=coach)
             if recurring_form.is_valid():
                 d          = recurring_form.cleaned_data
                 target_dow = int(d["day_of_week"])
                 duration   = datetime.timedelta(minutes=int(d["slot_duration_minutes"]))
                 today      = datetime.date.today()
+                # Work out days until the next occurrence of the chosen weekday
                 days_ahead = (target_dow - today.weekday()) % 7 or 7
                 first_date = today + datetime.timedelta(days=days_ahead)
                 created    = 0
@@ -400,7 +457,7 @@ def coach_dashboard(request):
                         slot.full_clean()
                         slot.save()
                         created += 1
-                    except Exception:
+                    except ValidationError:
                         pass  # skip slots that fail validation (e.g. overlaps)
 
                 if created:
@@ -418,24 +475,16 @@ def coach_dashboard(request):
 
     dashboard_calendar_events = []
     for slot in all_slots:
-        area_str = slot.area.name if slot.area else ""
-
-        if slot.status == SessionSlot.Status.AVAILABLE:
-            # Colour available slots by mode
-            if slot.mode == SessionSlot.Mode.IN_PERSON:
-                bg    = "#b45309"
-                label = f"{slot.skill.name} — 📍 {area_str}" if area_str else f"{slot.skill.name} — 📍 In person"
-            else:
-                bg    = "#1a6b3c" if coach.category.name == "Grinds" else "#5b3fd4" if coach.category.name == "Music" else "#0369a1"
-                label = f"{slot.skill.name} — 💻 Online"
-        else:
-            # Booked slots show grey with the student's name
-            bg = "#6b7280"
+        # For booked slots, pass the student's name; available slots get None
+        booked_name = None
+        if slot.status != SessionSlot.Status.AVAILABLE:
             try:
-                student_name = slot.booking.display_name()
-            except Exception:
-                student_name = "Booked"
-            label = f"{slot.skill.name} — ✓ {student_name}"
+                booked_name = slot.booking.display_name()
+            except (AttributeError, Booking.DoesNotExist):
+                booked_name = "Booked"
+
+        label, bg = _slot_label_and_colour(slot, coach.category.name, booked_name)
+        area_str = slot.area.name if slot.area else ""
 
         dashboard_calendar_events.append({
             "id":              slot.id,
@@ -464,6 +513,7 @@ def coach_dashboard(request):
 
 @login_required
 def coach_cancel_slot(request, slot_id):
+    # Remove an available slot from the coach's calendar (POST only)
     if request.user.role != User.Role.COACH:
         raise PermissionDenied
     coach = get_object_or_404(CoachProfile, user=request.user)
@@ -477,6 +527,7 @@ def coach_cancel_slot(request, slot_id):
 
 @login_required
 def coach_respond_booking(request, booking_id):
+    # Accept or reject a pending in-person booking request
     if request.user.role != User.Role.COACH:
         raise PermissionDenied
     booking = get_object_or_404(Booking.objects.select_related("slot", "slot__coach", "student"), pk=booking_id)
@@ -499,6 +550,7 @@ def coach_respond_booking(request, booking_id):
 
 @login_required
 def coach_set_meeting_link(request, booking_id):
+    # Let a coach add or update the Zoom/Teams link for an online booking
     if request.user.role != User.Role.COACH:
         raise PermissionDenied
     booking = get_object_or_404(Booking.objects.select_related("slot", "slot__coach"), pk=booking_id)

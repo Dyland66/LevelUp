@@ -30,13 +30,15 @@
     </div>
 
     <div class="lu-section-title">Booking details</div>
+    {# Past confirmed bookings are displayed as "Completed" in grey #}
     <div style="margin-bottom:20px;">
         <span class="lu-badge
-            {% if booking.status == 'CONFIRMED' %}lu-badge-green
+            {% if booking.status == 'CONFIRMED' and booking.slot.start_datetime < now %}lu-badge-neutral
+            {% elif booking.status == 'CONFIRMED' %}lu-badge-green
             {% elif booking.status == 'PENDING' %}lu-badge-amber
             {% elif booking.status == 'REJECTED' %}lu-badge-red
             {% else %}lu-badge-neutral{% endif %}">
-            {{ booking.get_status_display }}
+            {% if booking.status == 'CONFIRMED' and booking.slot.start_datetime < now %}Completed{% else %}{{ booking.get_status_display }}{% endif %}
         </span>
     </div>
 
@@ -51,8 +53,8 @@
                 <span class="detail-value">{{ booking.slot.coach.user.full_name }}</span>
             </div>
             <div class="detail-row">
-                <span class="detail-label">Student</span>
-                <span class="detail-value">{{ booking.display_name }}</span>
+                <span class="detail-label">Profile</span>
+                <span class="detail-value">{{ booking.student.full_name }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Date &amp; time</span>
@@ -126,6 +128,23 @@
             }
         </script>
         <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=initBookingMap" async defer></script>
+    {% endif %}
+
+    {% if booking.review %}
+        <div class="lu-card" style="margin-bottom:20px;">
+            <div class="lu-card-head">
+                <div class="lu-card-title">Your review</div>
+                <span style="color:#f59e0b;">{% for i in "12345" %}{% if forloop.counter <= booking.review.stars %}★{% else %}☆{% endif %}{% endfor %}</span>
+            </div>
+            <div class="lu-card-body" style="padding-top:10px;">
+                {% if booking.review.comment %}
+                    <p style="font-size:.875rem; color:#4b4540; margin:0;">{{ booking.review.comment }}</p>
+                {% else %}
+                    <p style="font-size:.84rem; color:var(--muted); margin:0;">No written feedback.</p>
+                {% endif %}
+                <div style="font-size:.75rem; color:var(--muted); margin-top:8px;">Submitted {{ booking.review.created_at|date:"j M Y" }}</div>
+            </div>
+        </div>
     {% endif %}
 
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">

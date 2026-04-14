@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
+from django.db.models import Avg
 from django.utils import timezone
 
 
@@ -110,11 +111,9 @@ class CoachProfile(models.Model):
         return f"{self.user.full_name()} - {self.category.name}"
 
     def average_rating(self):
-        # Returns the average star rating, or None if no reviews yet
-        reviews = self.reviews.all()
-        if not reviews.exists():
-            return None
-        return round(sum(r.stars for r in reviews) / reviews.count(), 1)
+        # Use Django's Avg aggregation — lets the database do the maths
+        result = self.reviews.aggregate(avg=Avg("stars"))["avg"]
+        return round(result, 1) if result else None
 
     def review_count(self):
         return self.reviews.count()
