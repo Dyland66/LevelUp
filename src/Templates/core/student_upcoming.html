@@ -1,3 +1,8 @@
+{# ── STUDENT BOOKINGS LIST ──────────────────────────────────────────────── #}
+{# View: student_upcoming   Context: bookings (all student Booking objects),  #}
+{#   now (current datetime for comparing session start times).               #}
+{# Colour-coded status dots: green=confirmed, amber=pending,                 #}
+{#   red=rejected, grey=cancelled or completed.                              #}
 {% extends "core/base.html" %}
 
 {% block title %}My Sessions · LevelUp!{% endblock %}

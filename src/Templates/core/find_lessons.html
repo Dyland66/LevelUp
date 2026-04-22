@@ -1,3 +1,9 @@
+{# ── FIND LESSONS (MARKETPLACE) ─────────────────────────────────────────── #}
+{# View: find_lessons                                                         #}
+{# Context: form (FindLessonsForm), coaches (filtered CoachProfile list),    #}
+{#   searched (bool — True once any filter is applied).                      #}
+{# Layout: sticky filter sidebar (left) + coach result cards (right).        #}
+{# Each coach card shows name, category, skills, areas, rate, next slot.     #}
 {% extends "core/base.html" %}
 
 {% block title %}Find Lessons · LevelUp!{% endblock %}

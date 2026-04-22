@@ -1,3 +1,9 @@
+{# ── BOOKING DETAIL ──────────────────────────────────────────────────────── #}
+{# View: booking_detail   Context: booking, now, can_review.                 #}
+{# Shows slot info, booking status badge, and (if in-person + coords saved) #}
+{#   an embedded Google Map pinning the student's address.                   #}
+{# If the session is past and confirmed, a "Leave a review" link appears.    #}
+{# If within the 24-hour window, a cancel button appears.                    #}
 {% extends "core/base.html" %}
 
 {% block title %}Booking Details · LevelUp!{% endblock %}

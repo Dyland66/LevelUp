@@ -1,3 +1,10 @@
+{# ── COACH PUBLIC PROFILE ───────────────────────────────────────────────── #}
+{# View: coach_detail                                                         #}
+{# Context: coach, slots, calendar_events_json, avg_rating, review_count,   #}
+{#   reviews, mode_filter.                                                   #}
+{# Layout: sticky profile sidebar (left) + slot calendar/list panel (right). #}
+{# Clicking a calendar event opens a booking popup modal (JS-driven).        #}
+{# FullCalendar (CDN) renders available slots colour-coded by mode/category.  #}
 {% extends "core/base.html" %}
 
 {% block title %}{{ coach.user.full_name }} · LevelUp!{% endblock %}

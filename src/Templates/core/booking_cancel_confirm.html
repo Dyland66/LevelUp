@@ -1,3 +1,7 @@
+{# ── BOOKING CANCELLATION CONFIRM ───────────────────────────────────────── #}
+{# View: student_cancel_booking   Context: booking.                          #}
+{# Intermediate confirmation step before the cancellation is committed.      #}
+{# Only reachable if booking.can_cancel() is True (>24 hrs before session).  #}
 {% extends "core/base.html" %}
 
 {% block title %}Cancel Booking · LevelUp!{% endblock %}

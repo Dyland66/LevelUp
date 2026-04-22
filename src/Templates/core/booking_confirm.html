@@ -1,3 +1,9 @@
+{# ── BOOKING CONFIRMATION ───────────────────────────────────────────────── #}
+{# View: book_slot   Context: slot, form (BookingConfirmForm), google_maps_key #}
+{# In-person non-sports slots: Google Maps Places autocomplete collects       #}
+{#   student address and writes lat/lng into hidden fields for Django to save. #}
+{# Sports slots: no address needed (venue is fixed at coach's eircode).       #}
+{# Online slots: no address needed — confirms instantly on POST.             #}
 {% extends "core/base.html" %}
 
 {% block title %}Confirm Booking · LevelUp!{% endblock %}

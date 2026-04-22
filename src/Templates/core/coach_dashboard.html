@@ -1,3 +1,12 @@
+{# ── COACH DASHBOARD ─────────────────────────────────────────────────────── #}
+{# View: coach_dashboard                                                      #}
+{# Context: coach, slot_form, recurring_form, available_slots,               #}
+{#   pending_bookings, upcoming_bookings, calendar_events_json,              #}
+{#   avg_rating, review_count, recent_reviews.                               #}
+{# Forms POST to the same URL with a hidden "action" field:                  #}
+{#   action=create_slot      → creates a single SessionSlot                 #}
+{#   action=create_recurring → generates slots from a day/time pattern      #}
+{# FullCalendar (CDN) renders all slots colour-coded by mode/category.       #}
 {% extends "core/base_coach.html" %}
 
 {% block title %}Dashboard · LevelUp!{% endblock %}
