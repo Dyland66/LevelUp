@@ -26,8 +26,7 @@ class CoachSignUpForm(UserCreationForm):
 
 
 # ── SUBSCRIPTION SELECTION ────────────────────────────────────────────────────
-# Only FREE is active; PRO is shown as coming soon for demo purposes
-
+# Free plan only in this prototype.
 class SubscriptionSelectForm(forms.Form):
     tier = forms.ChoiceField(
         choices=[("FREE", "Free — €0/year  ✓ All core features included")],
@@ -37,8 +36,7 @@ class SubscriptionSelectForm(forms.Form):
     )
 
 
-# ── PROFILE EDIT (STUDENT & COACH) ────────────────────────────────────────────
-
+# ── PROFILE EDIT (STUDENT & COACH) ───────────────────────────────────────────
 class ProfileEditForm(forms.ModelForm):
     dob = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
 
@@ -143,7 +141,7 @@ class ChildProfileForm(forms.ModelForm):
 # ── REVIEW ────────────────────────────────────────────────────────────────────
 
 class ReviewForm(forms.ModelForm):
-    # Show stars as radio buttons (1–5)
+    # 1-5 star radio choices.
     stars = forms.ChoiceField(
         choices=[(i, f"{i} star{'s' if i > 1 else ''}") for i in range(1, 6)],
         widget=forms.RadioSelect,

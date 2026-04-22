@@ -1,11 +1,7 @@
-"""
-Management command to seed the database with fake coach data.
+"""Seed demo coaches and slots.
 
-Usage:
-    python manage.py seed_coaches
-
-Safe to run multiple times — existing coaches get their slots refreshed.
-All demo passwords: LevelUp2024!
+Usage: python manage.py seed_coaches
+Safe to re-run; existing coach slots are refreshed.
 """
 
 import datetime
@@ -19,7 +15,7 @@ from core.models import (
 
 COACHES = [
 
-    # ── Grinds — core subjects ─────────────────────────────────────────────────
+    # Grinds (core)
     {
         "username": "john_maths", "forename": "John", "surname": "Murphy",
         "email": "john.murphy@example.com",
@@ -63,7 +59,7 @@ COACHES = [
         "category": "Grinds", "skills": ["Biology"], "rate": 41, "areas": ["Cork City"], "verified": False,
     },
 
-    # ── Grinds — new subjects ──────────────────────────────────────────────────
+    # Grinds (additional)
     {
         "username": "emma_chemistry", "forename": "Emma", "surname": "Collins",
         "email": "emma.collins@example.com",
@@ -155,7 +151,7 @@ COACHES = [
         "category": "Grinds", "skills": ["Physical Education"], "rate": 38, "areas": ["Dublin City", "Tallaght"], "verified": False,
     },
 
-    # ── Sports ────────────────────────────────────────────────────────────────
+    # Sports
     {
         "username": "padraig_padel", "forename": "Padraig", "surname": "Connolly",
         "email": "padraig.connolly@example.com",
@@ -193,7 +189,7 @@ COACHES = [
         "category": "Sports", "skills": ["Padel"], "rate": 52, "areas": ["Dublin 2", "Dublin City"], "verified": True, "eircode": "D02 YK45",
     },
 
-    # ── Music ─────────────────────────────────────────────────────────────────
+    # Music
     {
         "username": "declan_guitar", "forename": "Declan", "surname": "Ryan",
         "email": "declan.ryan@example.com",

@@ -39,7 +39,7 @@ ROOT_URLCONF = 'LevelUp.urls'
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR / "Templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -84,22 +84,9 @@ MEDIA_ROOT = BASE_DIR / "media"
 LOGIN_REDIRECT_URL  = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-# ── Email configuration ────────────────────────────────────────────────────
-#
-# In development, emails are printed to the console so you can verify
-# the content without needing an SMTP server. To switch to real email
-# for deployment, comment out the console backend and fill in the SMTP
-# settings below — no changes to views.py are required.
-#
+# Use console email backend in prototype.
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@levelup.ie'
 
 
 GOOGLE_MAPS_API_KEY = 'AIzaSyBKwIABYQJ1zC7nlALJm8cSVGz8_uU4Los'
-# ── Production SMTP example (uncomment and fill in for deployment) ──────────
-# EMAIL_BACKEND   = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST      = 'smtp.gmail.com'
-# EMAIL_PORT      = 587
-# EMAIL_USE_TLS   = True
-# EMAIL_HOST_USER = 'your-email@gmail.com'
-# EMAIL_HOST_PASSWORD = 'your-app-password'

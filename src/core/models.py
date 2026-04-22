@@ -7,12 +7,9 @@ from django.utils import timezone
 
 
 # ── USER ──────────────────────────────────────────────────────────────────────
-# We extend Django's built-in User model to add roles (Student or Coach)
-# and extra profile fields like name, date of birth, and profile picture.
-
 class User(AbstractUser):
 
-    # Two possible roles for any user
+    # User role.
     class Role(models.TextChoices):
         STUDENT = "STUDENT", "Student/Parent"
         COACH   = "COACH",   "Coach/Teacher"
@@ -39,7 +36,7 @@ class User(AbstractUser):
 
 
 # ── CATEGORY ─────────────────────────────────────────────────────────────────
-# The three top-level lesson types: Grinds, Sports, Music
+# The three lesson types: Grinds, Sports, Music
 
 class Category(models.Model):
     name = models.CharField(max_length=30, unique=True)
@@ -83,7 +80,7 @@ class CoachSubscription(models.Model):
         FREE = "FREE", "Free"
         PRO  = "PRO",  "Pro – €59.95/year"
 
-    # One subscription per coach user
+    # One subscription per coach.
     coach_user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subscription")
     tier       = models.CharField(max_length=10, choices=Tier.choices, default=Tier.FREE)
     started_at = models.DateTimeField(default=timezone.now)
@@ -104,14 +101,14 @@ class CoachProfile(models.Model):
     base_location_eircode = models.CharField(max_length=10, blank=True)
     hourly_rate = models.DecimalField(max_digits=7, decimal_places=2, default=0)
 
-    # Admin sets this manually after Garda vetting — important for under-18 students
+    # Set by admin after vetting.
     is_verified = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.full_name()} - {self.category.name}"
 
     def average_rating(self):
-        # Use Django's Avg aggregation — lets the database do the maths
+        # Aggregate rating in DB.
         result = self.reviews.aggregate(avg=Avg("stars"))["avg"]
         return round(result, 1) if result else None
 
@@ -122,7 +119,7 @@ class CoachProfile(models.Model):
 # ── CHILD PROFILE ─────────────────────────────────────────────────────────────
 # A parent can create sub-profiles for their children.
 # The child's name shows on bookings instead of the parent's.
-# No separate login — GDPR Article 8 compliance (parental consent for minors).
+# No separate login
 
 class ChildProfile(models.Model):
     parent     = models.ForeignKey(User, on_delete=models.CASCADE, related_name="child_profiles")
@@ -140,7 +137,7 @@ class ChildProfile(models.Model):
 
 # ── SESSION SLOT ──────────────────────────────────────────────────────────────
 # A bookable time slot created by a coach.
-# Slots can be Online or In Person, and track their status.
+# Slots can be Online or In Person.
 
 class SessionSlot(models.Model):
 
@@ -163,27 +160,27 @@ class SessionSlot(models.Model):
     status         = models.CharField(max_length=20, choices=Status.choices, default=Status.AVAILABLE)
 
     def clean(self):
-        # Start must be before end
+        # Enforce valid time range.
         if self.start_datetime >= self.end_datetime:
             raise ValidationError("Start time must be before end time.")
 
-        # Coach must teach this skill
+        # Coach must teach selected skill.
         if self.coach_id and self.skill_id:
             if not self.coach.teaches.filter(pk=self.skill_id).exists():
                 raise ValidationError("You can only create sessions for skills you teach.")
 
-        # In-person slots must have an area
+        # Area required for in-person sessions.
         if self.mode == self.Mode.IN_PERSON and self.area is None:
             raise ValidationError("In-person sessions must include an area for filtering.")
 
-        # Sports must be in-person with an Eircode
+        # Sports must be in-person and include eircode.
         if self.skill_id and self.skill.category.name.lower() == "sports":
             if self.mode != self.Mode.IN_PERSON:
                 raise ValidationError("Sports sessions must be in-person.")
             if not self.venue_eircode:
                 raise ValidationError("Sports sessions require a location Eircode.")
 
-        # No overlapping slots for the same coach
+        # Block overlapping slots per coach.
         overlap = SessionSlot.objects.filter(
             coach=self.coach,
             status__in=[self.Status.AVAILABLE, self.Status.BOOKED],
@@ -226,13 +223,13 @@ class Booking(models.Model):
         return f"{self.student.full_name()} -> {self.slot}"
 
     def display_name(self):
-        # Show child's name on booking if booked on behalf of a child
+        # Prefer child name when present.
         if self.child_profile:
             return self.child_profile.full_name()
         return self.student.full_name()
 
     def can_cancel(self):
-        # Students can only cancel if more than 24 hours remain before the session
+        # 24-hour cancellation window.
         if self.status not in (self.Status.CONFIRMED, self.Status.PENDING):
             return False
         hours_until = (self.slot.start_datetime - timezone.now()).total_seconds() / 3600

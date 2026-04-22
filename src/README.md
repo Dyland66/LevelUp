@@ -1,49 +1,31 @@
-# CSC1180 PRACTICUM
+# LevelUp Prototype
 
-This is a template for csc1180 practicums.  Please read these instructions carefully.
+LevelUp is a Django prototype for booking grinds, sports coaching, and music lessons.
 
-This file is written in
-[markdown](https://guides.github.com/features/mastering-markdown/).  Markdown
-is a suitable format for documents stored in git repositories.
+## Quick Start (Windows PowerShell)
 
-## Instructions
+From the repository root:
 
-You *must* do the following:
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cd src
+python manage.py migrate
+python manage.py runserver
+```
 
-1 - Fork this repo.
+Open http://127.0.0.1:8000/
 
-2 - These repos must be named according to the relevant year and module; for example:
-     the format:
+## Optional Demo Data
 
-     2026-csc1180-XXXXXX
+```powershell
+cd src
+python manage.py seed_coaches
+```
 
-(where XXXXXX can be anything at all).
+## Notes
 
-For example, if Stephen Blott were to be doing an csc1180 practicum, he could rename
-his repo as:
-
-     2026-csc1180-sblott
-
-
-You should also update the *Project description*.
-
-3 - This directory has two important sub-directories.
-
-- All of your source code should be placed in the `src` sub-directory.
-
-- All of your documentation should be placed in the `docs` sub-directory.
-
-4 - There is further important documentation in the `docs` directory.  Read that next.
-
-When you are have followed all of these instructions and are sure that you
-understand what is expected, you may replace the contents of this file with a
-brief description of your project (two or three paragraphs).
-
-## Additional Resources
-
-- Git [cheat sheet](https://gitlab.computing.dcu.ie/sblott/local-gitlab-documentation/blob/master/cheat-sheet.md)
-- Gitlab [CI environment](https://gitlab.computing.dcu.ie/sblott/docker-ci-environment) and it's [available software](https://gitlab.computing.dcu.ie/sblott/docker-ci-environment/blob/master/Dockerfile)
-- Example projects with CI configured:
-   * [Python](https://gitlab.computing.dcu.ie/sblott/test-project-python)
-   * [Java](https://gitlab.computing.dcu.ie/sblott/test-project-java)
-   * [MySql](https://gitlab.computing.dcu.ie/sblott/test-project-mysql)
+- This repository includes a prototype SQLite database at `src/db.sqlite3`.
+- Static files are served by Django in development mode.
+- Templates are loaded from `src/Templates`.
